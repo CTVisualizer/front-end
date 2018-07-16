@@ -1,16 +1,16 @@
 {
-  "name": "front-end",
+  "name": "CTVisualizer",
   "version": "1.0.0",
-  "description": "The front-end for a Phoenix SqlLine visualizer",
-  "main": "main.js",
-  "scripts": {
-    "start": "node_modules/electron/dist/Electron.app/Contents/MacOS/Electron /Users/traryan/HackDay/front-end/",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "description": "The front-end of a database visualizer that works with Apache Phoenix",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@gitlab.com/ctvisualizer/front-end.git"
   },
+  "main": "app.js",
+  "scripts": {
+    "start": "electron app.js"
+  },
+  "license": "ISC",
   "author": "Travis Ryan",
   "license": "ISC",
   "bugs": {
@@ -18,7 +18,7 @@
   },
   "homepage": "https://gitlab.com/ctvisualizer/front-end#README",
   "devDependencies": {
-    "electron": "^2.0.5"
+    "electron": "^1.8.3"
   },
   "dependencies": {
     "path": "^0.12.7",

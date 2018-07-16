@@ -1,4 +1,4 @@
-function performQuery(inputString) {
+exports.performQuery = function(query) {
     var simpleJson = [
         {
             threat : "somemaliciousemail.com",
