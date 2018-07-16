@@ -10,7 +10,6 @@ exports.performQuery = function(query) {
             notable : false,
             description: "Some new description of the evil file!!!" 
         }
-
     ];
     return simpleJson;
 };
