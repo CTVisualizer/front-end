@@ -14,43 +14,57 @@
     <link rel="stylesheet" href="./styles.css">
 
     <body>
-        <!--Navbar-->
+        
+        <!-- Menu Bar -->
         <div class="ui menu">
             <div class="header item">
                 CTVisualizer
             </div>
-            <a class="item">
-                Help
+            <a class="item" onclick="switchComponent(1)">
+                <i class="play icon"></i>
+                DB Connection
             </a>
-            <a class="item">
+            <a class="item" onclick="switchComponent(3)">
+                <i class="wrench icon"></i>
                 Settings
             </a>
+            <a class="item" onclick="switchComponent(2)">
+                <i class="clipboard outline icon"></i>
+                Help
+            </a>
         </div>
-        <div class="ui container">
-            <div class="ui form">
-                <div class="field">
-                    <h3>Query</h3>
-                    <textarea id="queryInput" placeholder="SELECT * FROM..."></textarea>
+
+        <container id="mainComponent">
+            <!-- DB Container -->
+            <div class="ui container">
+                <div class="ui form">
+                    <div class="field">
+                        <h3>Query</h3>
+                        <textarea id="queryInput" placeholder="SELECT * FROM..."></textarea>
+                    </div>
+                    <button class="ui green button" onclick="generateTable()">
+                        <i class="play icon"></i>
+                        Run
+                    </button>
+                    <button class="ui red button" onclick="stopQuery()">
+                        <i class="stop icon"></i>
+                        Stop
+                    </button>
+                    <button class="ui blue button" onclick="clearResults()">
+                        <i class="redo icon"></i>
+                        Clear Results
+                    </button>
                 </div>
-                <button class="ui green button" onclick="generateTable()">
-                    <i class="play icon"></i>
-                    Run
-                </button>
-                <button class="ui red button">
-                    <i class="stop icon"></i>
-                    Stop
-                </button>
+                <h3>Results</h3>
+                <table id="queryResponse" class="ui celled striped table">
+                </table>
             </div>
-            <h3>Results</h3>
-            <p id="queryResponse">Once you run a query, its results will appear here.</p>
-        </div>
+        </container>
 
     </body>
 
     <!-- Scripts -->
-    <script>
-      delete module.exports
-    </script>
+    <script> delete module.exports </script>
     <script src="https://code.jquery.com/jquery-3.2.1.js"></script>
     <script src="window.js"></script>
     <script src="semantic/dist/semantic.min.js"></script>

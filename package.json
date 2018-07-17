@@ -17,10 +17,12 @@
   },
   "homepage": "https://gitlab.com/ctvisualizer/front-end#README",
   "devDependencies": {
-    "electron": "^1.8.3"
+    "electron": "1.8.7"
   },
   "dependencies": {
     "path": "^0.12.7",
-    "semantic-ui": "^2.3.3"
+    "prismjs": "^1.15.0",
+    "semantic-ui": "^2.3.3",
+    "table-builder": "^2.1.1"
   }
 }
