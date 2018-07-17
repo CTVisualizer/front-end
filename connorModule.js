@@ -1,30 +1,21 @@
-exports.performQuery = function(query) {
-    var simpleJson = [
-        {
-            threat : "somemaliciousemail.com",
-            notable : true,
-            description: "This is a description of the threat" 
-        },
-        {
-            threat : "anevilfile.txt",
-            notable : false,
-            description: "Some new description of the threat!" 
-        },
-        {
-            threat : "dsaDASdDW#SxasD!@DASFVasdASDSAFsd",
-            notable : true,
-            description: "this is a bad bad bad bad bad threat." 
-        },
-        {
-            threat : "myfile.html",
-            notable : true,
-            description: "no description found???" 
-        },
-        {
-            threat : "totallyValidEmail@proofpoint.com",
-            notable : false,
-            description: null
-        }
-    ];
+exports.performQuery = function (query) {
+    var simpleJson = 
+    { 
+        'metadata': 
+            { 'columns': 
+                [ 
+                    { 'name': 'description', 'type': 'VARCHAR' }, 
+                    { 'name': 'event_time', 'type': 'DATE' }, 
+                    { 'name': 'notable', 'type': 'BOOLEAN' }, 
+                    { 'name': 'verticals', 'type': 'VARCHAR ARRAY'},
+                    { 'name': 'threat', 'type' : 'VARCHAR'}
+                ]
+            }, 
+        'data': 
+            [
+                { 'description': 'description value', 'event_time': '2017-08-22 18:11:16.0', 'notable': true, 'verticals': ['cool', 'beans'], 'threat': 'bademail@gmail.com'},
+                { 'description': 'here is another description', 'event_time': '2018-03-12 08:00:23.5', 'notable': false, 'verticals': ['some', 'verticals'], 'threat' : 'badwebsite.com' }
+            ]
+    };
     return simpleJson;
 };
