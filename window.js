@@ -1,16 +1,18 @@
-/* global $ */
+//Node Modules
 const connorModule = require("./connorModule.js");
 const Table = require("table-builder");
 const request = require("request");
 //const child_process = require('child_process');
 const fs = require("fs");
-var currentComponent = 1; // current component which is being viewed (1=DB visualizer, 2=help, 3=drivermanager, 4=help)
+const progress = require('request-progress');
+
+//Front-End Configs
 var htmlComponents = require("./htmlComponents.json");
 const pathToSettings = "./config/settings.json";
 const pathToDriverSettings = "./config/driversettings.json";
 
-//State data to sustain across component changes
-var currentEnteredQuery;  // Query in the user's entry field
+//Component state Data
+var currentComponent = 1; // current component which is being viewed (1=DB visualizer, 2=help, 3=drivermanager, 4=help)
 var sqlVisualizerComponent; // current HTML state of the Sql Visualizer component
 
 // MIDDLEWARE FUNCTIONS
@@ -22,7 +24,7 @@ function generateTable() {
     } else {
       $("#errorWarning").html(htmlComponents["emptyErrorWarning"]);
       var query = document.getElementById("queryInput").value;
-      if(!query){
+      if (!query) {
         $("#errorWarning").html(htmlComponents["missingQueryError"]);
       } else {
         request('http://localhost:3000/execute?query=' + query, function (error, response, body) {
@@ -33,10 +35,14 @@ function generateTable() {
             var headers = buildHeaders(queryResults);
             var data = queryResults['data'];
             var tableHtml = (
-              (new Table({ "class": "ui fixed single line celled table", "id": "queryResponse", "style": "overflow-x:auto" }))
-                .setHeaders(headers)
-                .setData(data)
-                .render()
+              (new Table({
+                "class": "ui fixed single line celled table",
+                "id": "queryResponse",
+                "style": "overflow-x:auto"
+              }))
+              .setHeaders(headers)
+              .setData(data)
+              .render()
             );
             $("#queryResponse").html(tableHtml);
           }
@@ -89,16 +95,22 @@ function switchComponent(newComponent) {
   currentComponent = newComponent;
 }
 
-function manageDrivers(){
+function manageDrivers() {
   updateSettings();
   switchComponent(3);
   populateAvailableDrivers();
   $('.ui.dropdown').dropdown();
 }
 
-//CONFIGURATION FUNCTIONS
+//CONFIGURATION FUNCTIONS (Settings and Drivers Config field population and config file I/O)
 function updateSettings() {
-  var newSettingsData = { "quorum": "", "port": "", "hbase-node": "", "principal": "", "path-to-keytab": ""};
+  var newSettingsData = {
+    "quorum": "",
+    "port": "",
+    "hbase-node": "",
+    "principal": "",
+    "path-to-keytab": ""
+  };
   var emptyFieldsExist = false;
   for (var i = 0; i < Object.keys(newSettingsData).length; i++) {
     var enteredField = document.getElementById(Object.keys(newSettingsData)[i]).value;
@@ -130,10 +142,63 @@ function populateSettingsFields() {
 function populateAvailableDrivers() {
   $.getJSON(pathToDriverSettings, function (driverSettingsJson) {
     document.getElementById("activeDriverName").innerHTML = driverSettingsJson["activeDriver"];
+    var downloadedDrivers = driverSettingsJson["availableDrivers"];
+    $('.ui.dropdown').dropdown({
+      values: downloadedDrivers
+    }); // populate dropdown with array of drivers
   });
 }
 
-//Enable dropdowns on page ready
-$( document ).ready(function() {
-  $('.ui.dropdown').dropdown();
-});
+function updateActiveDriver() {
+  $.getJSON(pathToDriverSettings, function (driverSettingsJson) {
+    var availableDrivers = driverSettingsJson["availableDrivers"];
+    var newActiveDriver = document.getElementsByClassName("item active selected")[0].innerHTML;
+    var newDriverData = '{ "activeDriver" : "' + newActiveDriver + '", "availableDrivers" : ' + JSON.stringify(availableDrivers) + "}";
+    var newDriverJson = JSON.parse(JSON.stringify(newDriverData));
+    fs.writeFile(pathToDriverSettings, newDriverJson, function (err) {
+      if (err)
+        console.log(err);
+      else {
+        document.getElementById("activeDriverName").innerHTML = newActiveDriver;
+        $("#driverErrorWarning").html(htmlComponents["activeDriverUpdatedComponet"]);
+      }
+    });
+  });
+}
+
+function downloadDriver() {
+  console.log("Attempting to download driver. (This might take a while.)");
+  var file = fs.createWriteStream("drivers/apache-phoenix-4.13.2-cdh5.11.2-bin.tar.gz");
+  var sendReq = progress(request.get("https://archive.apache.org/dist/phoenix/apache-phoenix-4.13.2-cdh5.11.2/bin/apache-phoenix-4.13.2-cdh5.11.2-bin.tar.gz"));
+
+  sendReq.on('progress', state => {
+    console.log(state["percent"]);
+  });
+  
+  sendReq.on('response', function (response) {
+    if (response.statusCode !== 200) {
+      console.log('Response status was ' + response.statusCode);
+    }
+  });
+
+  sendReq.on('response', function ( data ) {
+    console.log( data.headers[ 'content-length' ] );
+  });
+
+  sendReq.on('error', function (err) {
+    fs.unlink("drivers/apache-phoenix-4.13.2-cdh5.11.2-bin.tar.gz");
+    return cb(err.message);
+  });
+
+  sendReq.pipe(file);
+
+  file.on('finish', function () {
+    file.close();
+    console.log("Finished downloading!");
+  });
+
+  file.on('error', function (err) {
+    fs.unlink("drivers/apache-phoenix-4.13.2-cdh5.11.2-bin.tar.gz");
+    console.log(err.message);
+  });
+}

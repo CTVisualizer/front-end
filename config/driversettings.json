@@ -1,5 +1,1 @@
-{
-"activeDriver": "No driver selected!!",
-"availableDrivers":
-    ["apache-phoenix-4.13.2-cdh5.11.2-bin.tar.gz", "otherdriver.tar.gz", "yetANOTHERdriver.tar.gz"]  
-}
+{ "activeDriver" : "apache-phoenix-4.13.2-cdh5.11.2-bin.tar.gz", "availableDrivers" : [{"name":"apache-phoenix-4.13.2-cdh5.11.2-bin.tar.gz"},{"name":"apache-phoenix-4.14.2-cdh5.11.2-bin.tar.gz"}]}
