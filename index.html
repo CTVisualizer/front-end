@@ -16,7 +16,7 @@
     <body>
 
         <!-- Menu Bar -->
-        <div class="ui menu">
+        <div class="ui menu" id="navbar">
             <div class="header item">
                 CTVisualizer
             </div>
@@ -33,35 +33,44 @@
                 Help
             </a>
         </div>
-
-        <container id="mainComponent">
-            <!-- DB Container -->
-            <div class="ui container">
-                <div id="errorWarning"></div>
-                <div class="ui form">
-                    <div class="field">
-                        <h2>Query</h2>
-                        <textarea id="queryInput" placeholder="SELECT * FROM..."></textarea>
+        <div class="ui grid">
+            <div class="two wide column"></div>
+            <div class="twelve wide column">
+                <container id="mainComponent">
+                    <!-- DB Container -->
+                    <div class="ui container">
+                        <div id="errorWarning"></div>
+                        <div class="ui form">
+                            <div class="field">
+                                <h2>DB Connection</h2>
+                                <h4 id='dbConnectionStatus' style="color: red">No Active Connection</h4>
+                                <button class="ui blue button small" id="connectButton" onclick="createConnection()">
+                                    <i class="play icon"></i>
+                                    Connect to Database
+                                </button>
+                                <h3>Query</h3>
+                                <textarea id="queryInput" placeholder="SELECT * FROM..."></textarea>
+                            </div>
+                            <button class="ui green button" onclick="generateTable()">
+                                <i class="play icon"></i>
+                                Run
+                            </button>
+                            <button class="ui red button" onclick="stopQuery()">
+                                <i class="stop icon"></i>
+                                Stop
+                            </button>
+                            <button class="ui blue button" onclick="clearResults()">
+                                <i class="redo icon"></i>
+                                Clear Results
+                            </button>
+                        </div>
+                        <h3>Results</h3>
+                        <table id="queryResponse" class="ui celled striped table">
+                        </table>
                     </div>
-                    <button class="ui green button" onclick="generateTable()">
-                        <i class="play icon"></i>
-                        Run
-                    </button>
-                    <button class="ui red button" onclick="stopQuery()">
-                        <i class="stop icon"></i>
-                        Stop
-                    </button>
-                    <button class="ui blue button" onclick="clearResults()">
-                        <i class="redo icon"></i>
-                        Clear Results
-                    </button>
-                </div>
-                <h3>Results</h3>
-                <table id="queryResponse" class="ui celled striped table">
-                </table>
+                </container>
             </div>
-        </container>
-
+            <div class="two wide column"></div>
     </body>
 
     <!-- Scripts -->

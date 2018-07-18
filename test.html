@@ -1,38 +1,40 @@
 <!doctype html>
-<html lang="en">
+<html lang='en'>
 
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="The front-end interface for a HackDay project to visualize Phoenix SQLLine queries">
-    <meta name="author" content="Travis Ryan">
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
+    <meta name='description' content='The front-end interface for a HackDay project to visualize Phoenix SQLLine queries'>
+    <meta name='author' content='Travis Ryan'>
 
     <title>CTVisualizer</title>
 
     <!-- Stylesheets -->
-    <link rel="stylesheet" type="text/css" href="semantic/dist/semantic.min.css">
-    <link rel="stylesheet" href="./styles.css">
+    <link rel='stylesheet' type='text/css' href='semantic/dist/semantic.min.css'>
+    <link rel='stylesheet' href='./styles.css'>
 
     <body>
 
         <!-- Menu Bar -->
-        <div class="ui menu">
-            <div class="header item">
+        <div class='ui menu'>
+            <div class='header item'>
                 CTVisualizer
             </div>
-            <a class="item" onclick="switchComponent(1)">
-                <i class="play icon"></i>
+            <a class='item' onclick='switchComponent(1)'>
+                <i class='play icon'></i>
                 DB Connection
             </a>
-            <a class="item" onclick="switchComponent(2)">
-                <i class="wrench icon"></i>
+            <a class='item' onclick='switchComponent(2)'>
+                <i class='wrench icon'></i>
                 Settings
             </a>
-            <a class="item" onclick="switchComponent(4)">
-                <i class="clipboard outline icon"></i>
+            <a class='item' onclick='switchComponent(4)'>
+                <i class='clipboard outline icon'></i>
                 Help
             </a>
         </div>
+
+        <container id=mainComponent><div class='ui container'><div id=errorWarning></div><h2>Driver Manager</h2><p>Your active driver is: <b id=activeDriverName>None selected</b><p>You have the following drivers downloaded:<div class='ui dropdown selection'><input name=driver type=hidden> <i class='dropdown icon'></i><div class='default text'>Select A Driver</div><div class=menu><div class=item data-value=1>Driver 1</div><div class=item data-value=0>Driver 2</div></div></div><h3>Download A Driver</h3><p>Enter the name of an Apache Phoenix driver to download it:<p><i>Example: apache-phoenix-4.13.2-cdh5.11.2-bin.tar.gz</i><div class='ui form'><div class=field><label>Driver Name</label> <input placeholder='Driver Name'></div></div><button class='ui blue button small'onclick=downloadDriver()><i class='icon download'></i> Download Driver</button><div id=downloadProgess></div></div></container>
 
         <container id='mainComponent'>
             <!-- DB Container -->
@@ -77,9 +79,9 @@
     <script>
         delete module.exports
     </script>
-    <script src="https://code.jquery.com/jquery-3.2.1.js"></script>
-    <script src="window.js"></script>
-    <script src="semantic/dist/semantic.min.js"></script>
+    <script src='https://code.jquery.com/jquery-3.2.1.js'></script>
+    <script src='window.js'></script>
+    <script src='semantic/dist/semantic.min.js'></script>
     <script>
         //Enable dropdowns on page ready
         $(document).ready(function () {

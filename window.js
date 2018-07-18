@@ -2,19 +2,22 @@
 const connorModule = require("./connorModule.js");
 const Table = require("table-builder");
 const request = require("request");
-//const child_process = require('child_process');
+const { spawn } = require('child_process');
 const fs = require("fs");
 const progress = require('request-progress');
+const homedir = require('os').homedir();
 
 //Front-End Configs
 var htmlComponents = require("./htmlComponents.json");
 const pathToSettings = "./config/settings.json";
 const pathToDriverSettings = "./config/driversettings.json";
 
-//Component state Data
+//Global Stated Data
 var currentComponent = 1; // current component which is being viewed (1=DB visualizer, 2=help, 3=drivermanager, 4=help)
 var sqlVisualizerComponent; // current HTML state of the Sql Visualizer component
 var currentlyDownloading = false; // is a driver being downloaded
+var sendReq; // request for downloading drivers (needs to be global)
+var connected = false;
 
 // MIDDLEWARE FUNCTIONS
 function generateTable() {
@@ -24,11 +27,15 @@ function generateTable() {
       $("#errorWarning").html(htmlComponents["incompleteSettingsWarning"]);
     } else {
       $("#errorWarning").html(htmlComponents["emptyErrorWarning"]);
-      var query = document.getElementById("queryInput").value;
+      var query = encodeURIComponent(document.getElementById("queryInput").value);
+      console.log("QUERY: "+query);
       if (!query) {
         $("#errorWarning").html(htmlComponents["missingQueryError"]);
       } else {
-        request('http://localhost:3000/execute?query=' + query, function (error, response, body) {
+        hideNavbar();
+        request('http://localhost:8080/execute/' + query, function (error, response, body) {
+          resumeNavbar();
+          console.log(body);
           if (error) {
             $("#errorWarning").html(htmlComponents["databaseRequestError"]);
           } else {
@@ -41,9 +48,9 @@ function generateTable() {
                 "id": "queryResponse",
                 "style": "overflow-x:auto"
               }))
-              .setHeaders(headers)
-              .setData(data)
-              .render()
+                .setHeaders(headers)
+                .setData(data)
+                .render()
             );
             $("#queryResponse").html(tableHtml);
           }
@@ -64,10 +71,21 @@ function buildHeaders(queryResults) {
 
 function clearResults() {
   $("#queryResponse").html("<table></table>");
+  $("#errorWarning").html(htmlComponents["emptyErrorWarning"]);
 }
 
 function stopQuery() {
-  clearResults();
+  request({
+    url: "http://localhost:8080/stop",
+    method: "DELETE",
+    }, function (error, response, body) {
+    if (!error) {
+      $("#errorWarning").html(htmlComponents["successfulStopMessage"]);
+    } else {
+      console.log("Unable to perform stop operation.");
+    }
+  });
+  resumeNavbar();
 }
 
 function validateSettingsExist(settingsJson) {
@@ -81,7 +99,7 @@ function validateSettingsExist(settingsJson) {
 
 //COMPONENT-RELATED FUNCTIONS
 function switchComponent(newComponent) {
-  if(!currentlyDownloading){
+  if (!currentlyDownloading) {
     if (currentComponent == 1)
       sqlVisualizerComponent = $("#mainComponent").html();
     if (newComponent == 1) { // DB Visualizer
@@ -143,20 +161,23 @@ function populateSettingsFields() {
 }
 
 function populateAvailableDrivers() {
-  $.getJSON(pathToDriverSettings, function (driverSettingsJson) {
-    document.getElementById("activeDriverName").innerHTML = driverSettingsJson["activeDriver"];
-    var downloadedDrivers = driverSettingsJson["availableDrivers"];
-    $('.ui.dropdown').dropdown({
-      values: downloadedDrivers
-    }); // populate dropdown with array of drivers
+  var driverLocation = homedir + "/.ctvisualizer/";
+  var arrayOfDrivers = [];
+  if (!fs.existsSync(driverLocation)) {
+    fs.mkdirSync(driverLocation);
+  }
+  fs.readdirSync(driverLocation).forEach(file => {
+    arrayOfDrivers.push({ "name": file, "value": file });
+  });
+  $('.ui.dropdown').dropdown({ // populate dropdown
+    values: arrayOfDrivers
   });
 }
 
 function updateActiveDriver() {
   $.getJSON(pathToDriverSettings, function (driverSettingsJson) {
-    var availableDrivers = driverSettingsJson["availableDrivers"];
     var newActiveDriver = document.getElementsByClassName("item active selected")[0].innerHTML;
-    var newDriverData = '{ "activeDriver" : "' + newActiveDriver + '", "availableDrivers" : ' + JSON.stringify(availableDrivers) + "}";
+    var newDriverData = '{ "activeDriver" : "' + newActiveDriver + '"}';
     var newDriverJson = JSON.parse(JSON.stringify(newDriverData));
     fs.writeFile(pathToDriverSettings, newDriverJson, function (err) {
       if (err)
@@ -169,50 +190,163 @@ function updateActiveDriver() {
   });
 }
 
-function downloadDriver() {
-  if(!currentlyDownloading){
+function downloadDriver() { // process for downloading a new driver
+  if (!currentlyDownloading) {
     currentlyDownloading = true;
-    console.log("Attempting to download driver. (This might take a while.)");
-    document.getElementById("downloadSpinner").innerHTML="<i id='downloadSpinner' class='spinner loading icon'></i>";
-    var file = fs.createWriteStream("drivers/apache-phoenix-4.14.0-HBase-1.4-bin.tar.gz");
-    var sendReq = progress(request.get("https://archive.apache.org/dist/phoenix/apache-phoenix-4.14.0-HBase-1.4/bin/apache-phoenix-4.14.0-HBase-1.4-bin.tar.gz"));
+    var fileToDownload = document.getElementById('driverToDownload').value;
+    var writePath = homedir + "/.ctvisualizer/" + fileToDownload;
+    var baseDownloadPath = "https://downloads.mixxx.org/mixxx-2.1.1/";
+    var currentDownloadPercent = 0;
+    hideNavbar();
+    document.getElementById("downloadSpinner").outerHTML = "<i id='downloadSpinner' class='spinner loading icon'></i>";
+    document.getElementById("endDownloadButton").outerHTML = "<button class='small red ui button' id='endDownloadButton' onclick='quitDownload()'><i class='icon stop'></i>Stop Download</div>";
+    var file = fs.createWriteStream(writePath);
+    sendReq = progress(request.get(baseDownloadPath + fileToDownload));
 
     sendReq.on('progress', state => {
-      var currentDownloadPercent = (state["percent"]*100).toFixed(2);
+      currentDownloadPercent = (state["percent"] * 100).toFixed(2);
       var currentDownloadedBytes = state["size"]["transferred"];
       var totalDownloadSize = state["size"]["total"];
-      var updateMessage = "<h3 id='downloadProgress'> Download Progress: "+currentDownloadedBytes+"/"+totalDownloadSize+" ("+currentDownloadPercent+"%) </h3>";
+      var updateMessage = "<h3 id='downloadProgress'> Download Progress: " + currentDownloadedBytes + "/" + totalDownloadSize + " (" + currentDownloadPercent + "%) </h3>";
       document.getElementById("downloadProgress").innerHTML = updateMessage;
     });
-    
+
     sendReq.on('response', function (response) {
       if (response.statusCode !== 200) {
-        console.log('Response status was ' + response.statusCode);
+        console.log(response.body);
+        console.log('Response was ' + (JSON.stringify(response)));
       }
     });
 
     sendReq.on('error', function (err) {
-      fs.unlink("drivers/apache-phoenix-4.13.2-cdh5.11.2-bin.tar.gz");
-      document.getElementById("downloadSpinner").innerHTML="<i class='icon download' id='downloadSpinner'></i>";
-      document.getElementById("downloadProgress").innerHTML = "<h3 id='downloadProgress'>Download failed: "+err.message+"</h3>";
-      currentlyDownloading = false;
+      fs.unlink(writePath);
+      document.getElementById("downloadSpinner").outerHTML = "<i class='icon download' id='downloadSpinner'></i>";
+      console.log(err);
+      downloadEnded();
     });
 
     sendReq.pipe(file);
 
     file.on('finish', function () {
       file.close();
-      console.log("Finished downloading!");
-      document.getElementById("downloadProgress").innerHTML = "<h3 id='downloadProgress'>Download was successful!</h3>";
-      document.getElementById("downloadSpinner").innerHTML="<i class='icon download' id='downloadSpinner'></i>";
-      currentlyDownloading = false;
+      if (currentDownloadPercent > 80) // Pretty hacky, could be changed later if time allows... Keeps track of whether download completed successfully
+        document.getElementById("downloadProgress").outerHTML = "<h3 id='downloadProgress'>Download was successful!</h3>";
+      else {
+        fs.unlinkSync(writePath);
+      }
+      downloadEnded();
     });
 
     file.on('error', function (err) {
-      fs.unlink("drivers/apache-phoenix-4.13.2-cdh5.11.2-bin.tar.gz");
-      document.getElementById("downloadSpinner").innerHTML="<i class='icon download' id='downloadSpinner'></i>";
-      document.getElementById("downloadProgress").innerHTML = "<h3 id='downloadProgress'>Download failed: "+err.message+"</h3>";
-      currentlyDownloading = false;
+      fs.unlink(writePath);
+      document.getElementById("downloadProgress").outerHTML = "<h3 id='downloadProgress'>Download failed: " + err.message + "</h3>";
+      downloadEnded();
     });
   }
+}
+
+function quitDownload() { // download terminated manually
+  sendReq.abort();
+  document.getElementById("downloadProgress").outerHTML = "<h3 id='downloadProgress'>Download was terminated</h3>";
+  downloadEnded();
+}
+
+function downloadEnded() { // any time a download ends
+  document.getElementById("downloadSpinner").outerHTML = "<i class='icon download' id='downloadSpinner'></i>";
+  document.getElementById("downloadSpinner").outerHTML = "<i class='icon download' id='downloadSpinner'></i>";
+  document.getElementById("endDownloadButton").outerHTML = "<div id='endDownloadButton'></div>";
+  resumeNavbar();
+  populateAvailableDrivers();
+  currentlyDownloading = false;
+}
+
+function hideNavbar(){
+  document.getElementById("navbar").outerHTML = htmlComponents["emptyNavbarComponent"];
+}
+
+function resumeNavbar(){
+  document.getElementById("navbar").outerHTML = htmlComponents["navbarComponent"];
+}
+
+// PHOENIX CONNECTION
+function createConnection() {
+  document.getElementById("connectButton").outerHTML = htmlComponents["connectingButton"];
+  hideNavbar();
+
+  $.getJSON(pathToSettings, function (settingsJson) {
+    $.getJSON(pathToDriverSettings, function (driverSettingsJson) {
+
+      var shellScript = spawn('./phoenix-adapter/bin/phoenix-adapter',
+        [
+          '-quorum=' + settingsJson["quorum"],
+          '-port=' + settingsJson["port"],
+          '-hbaseNode=' + settingsJson["hbase-node"],
+          '-principal=' + settingsJson["principal"],
+          '-phoenixClient=' + homedir + "/.ctvisualizer/" + driverSettingsJson["activeDriver"],
+          '-keytab=' + settingsJson["path-to-keytab"]
+        ]
+      );
+
+      shellScript.stdout.on('data', (data) => {
+        console.log(`stdout: ${data}`);
+      });
+
+      shellScript.stderr.on('data', (data) => {
+        console.log(`stderr: ${data}`);
+      });
+
+      shellScript.on('close', (code) => {
+        console.log(`child process exited with code ${code}`);
+      });
+
+      // continiously try a health check until success or 10 seconds pass
+      var attempts = 0;
+      var requestLoop = setInterval(function () {
+        request({
+          url: "http://localhost:8080/health",
+          method: "GET",
+        }, function (error, response, body) {
+          if (attempts == 10) {
+            clearInterval(requestLoop);
+            connectionFailed();
+          }
+          else if (!error && response.statusCode == 200) {
+            console.log('sucess!');
+            clearInterval(requestLoop);
+            connectionSuccess();
+          } else {
+            console.log('Nope, no connection yet... Attempts: ' + attempts);
+          }
+          attempts++;
+        });
+      }, 1000);
+    });
+  });
+}
+
+function connectionSuccess(){
+  connected = true;
+  $("#dbConnectionStatus").html("<h4 id='dbConnectionStatus' style='color: green'>Connection is active</h4>");
+  document.getElementById("connectButton").outerHTML = htmlComponents["killConnectionButton"];
+  resumeNavbar();
+}
+
+function connectionFailed(){
+  console.log("Gave up on trying to make the connection...");
+  document.getElementById("connectButton").outerHTML = htmlComponents["defaultConnectButton"];
+  resumeNavbar();
+}
+
+function killConnection(){
+  request({
+    url: "http://localhost:8080/kill",
+    method: "DELETE",
+    }, function (error, response, body) {
+    if (!error) {
+      $("#dbConnectionStatus").html("<h4 id='dbConnectionStatus' style='color: red'>No active connection</h4>");
+      document.getElementById("connectButton").outerHTML = htmlComponents["defaultConnectButton"];
+    } else {
+      console.log("Unable to kill connection.");
+    }
+  });
 }
