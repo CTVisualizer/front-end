@@ -14,6 +14,7 @@ const pathToDriverSettings = "./config/driversettings.json";
 //Component state Data
 var currentComponent = 1; // current component which is being viewed (1=DB visualizer, 2=help, 3=drivermanager, 4=help)
 var sqlVisualizerComponent; // current HTML state of the Sql Visualizer component
+var currentlyDownloading = false; // is a driver being downloaded
 
 // MIDDLEWARE FUNCTIONS
 function generateTable() {
@@ -80,19 +81,21 @@ function validateSettingsExist(settingsJson) {
 
 //COMPONENT-RELATED FUNCTIONS
 function switchComponent(newComponent) {
-  if (currentComponent == 1)
-    sqlVisualizerComponent = $("#mainComponent").html();
-  if (newComponent == 1) { // DB Visualizer
-    $("#mainComponent").html(sqlVisualizerComponent);
-  } else if (newComponent == 2) { // Settings
-    $("#mainComponent").html(htmlComponents["settingsComponent"]);
-    populateSettingsFields();
-  } else if (newComponent == 3) { // Driver manager
-    $("#mainComponent").html(htmlComponents["driverManagerComponent"]);
-  } else if (newComponent == 4) { // Help
-    $("#mainComponent").html(htmlComponents["helpComponent"]);
+  if(!currentlyDownloading){
+    if (currentComponent == 1)
+      sqlVisualizerComponent = $("#mainComponent").html();
+    if (newComponent == 1) { // DB Visualizer
+      $("#mainComponent").html(sqlVisualizerComponent);
+    } else if (newComponent == 2) { // Settings
+      $("#mainComponent").html(htmlComponents["settingsComponent"]);
+      populateSettingsFields();
+    } else if (newComponent == 3) { // Driver manager
+      $("#mainComponent").html(htmlComponents["driverManagerComponent"]);
+    } else if (newComponent == 4) { // Help
+      $("#mainComponent").html(htmlComponents["helpComponent"]);
+    }
+    currentComponent = newComponent;
   }
-  currentComponent = newComponent;
 }
 
 function manageDrivers() {
@@ -167,38 +170,49 @@ function updateActiveDriver() {
 }
 
 function downloadDriver() {
-  console.log("Attempting to download driver. (This might take a while.)");
-  var file = fs.createWriteStream("drivers/apache-phoenix-4.13.2-cdh5.11.2-bin.tar.gz");
-  var sendReq = progress(request.get("https://archive.apache.org/dist/phoenix/apache-phoenix-4.13.2-cdh5.11.2/bin/apache-phoenix-4.13.2-cdh5.11.2-bin.tar.gz"));
+  if(!currentlyDownloading){
+    currentlyDownloading = true;
+    console.log("Attempting to download driver. (This might take a while.)");
+    document.getElementById("downloadSpinner").innerHTML="<i id='downloadSpinner' class='spinner loading icon'></i>";
+    var file = fs.createWriteStream("drivers/apache-phoenix-4.14.0-HBase-1.4-bin.tar.gz");
+    var sendReq = progress(request.get("https://archive.apache.org/dist/phoenix/apache-phoenix-4.14.0-HBase-1.4/bin/apache-phoenix-4.14.0-HBase-1.4-bin.tar.gz"));
 
-  sendReq.on('progress', state => {
-    console.log(state["percent"]);
-  });
-  
-  sendReq.on('response', function (response) {
-    if (response.statusCode !== 200) {
-      console.log('Response status was ' + response.statusCode);
-    }
-  });
+    sendReq.on('progress', state => {
+      var currentDownloadPercent = (state["percent"]*100).toFixed(2);
+      var currentDownloadedBytes = state["size"]["transferred"];
+      var totalDownloadSize = state["size"]["total"];
+      var updateMessage = "<h3 id='downloadProgress'> Download Progress: "+currentDownloadedBytes+"/"+totalDownloadSize+" ("+currentDownloadPercent+"%) </h3>";
+      document.getElementById("downloadProgress").innerHTML = updateMessage;
+    });
+    
+    sendReq.on('response', function (response) {
+      if (response.statusCode !== 200) {
+        console.log('Response status was ' + response.statusCode);
+      }
+    });
 
-  sendReq.on('response', function ( data ) {
-    console.log( data.headers[ 'content-length' ] );
-  });
+    sendReq.on('error', function (err) {
+      fs.unlink("drivers/apache-phoenix-4.13.2-cdh5.11.2-bin.tar.gz");
+      document.getElementById("downloadSpinner").innerHTML="<i class='icon download' id='downloadSpinner'></i>";
+      document.getElementById("downloadProgress").innerHTML = "<h3 id='downloadProgress'>Download failed: "+err.message+"</h3>";
+      currentlyDownloading = false;
+    });
 
-  sendReq.on('error', function (err) {
-    fs.unlink("drivers/apache-phoenix-4.13.2-cdh5.11.2-bin.tar.gz");
-    return cb(err.message);
-  });
+    sendReq.pipe(file);
 
-  sendReq.pipe(file);
+    file.on('finish', function () {
+      file.close();
+      console.log("Finished downloading!");
+      document.getElementById("downloadProgress").innerHTML = "<h3 id='downloadProgress'>Download was successful!</h3>";
+      document.getElementById("downloadSpinner").innerHTML="<i class='icon download' id='downloadSpinner'></i>";
+      currentlyDownloading = false;
+    });
 
-  file.on('finish', function () {
-    file.close();
-    console.log("Finished downloading!");
-  });
-
-  file.on('error', function (err) {
-    fs.unlink("drivers/apache-phoenix-4.13.2-cdh5.11.2-bin.tar.gz");
-    console.log(err.message);
-  });
+    file.on('error', function (err) {
+      fs.unlink("drivers/apache-phoenix-4.13.2-cdh5.11.2-bin.tar.gz");
+      document.getElementById("downloadSpinner").innerHTML="<i class='icon download' id='downloadSpinner'></i>";
+      document.getElementById("downloadProgress").innerHTML = "<h3 id='downloadProgress'>Download failed: "+err.message+"</h3>";
+      currentlyDownloading = false;
+    });
+  }
 }
