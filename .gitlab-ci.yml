@@ -22,13 +22,12 @@ before_script:
 #   - export NPM_CONFIG_PREFIX=/builds/ctvisualizer/front-end/.npm-global
 #   - export PATH=$PATH:/builds/ctvisualizer/front-end/.npm-global/bin
   - npm install electron-packager -g --unsafe-perm
-  - npm install electron-installer-dmg -g --unsafe-perm
 
 buildDMG:
   script:
    - npm install
    - electron-packager . CTVisualizer --platform=darwin --arch=x64 --out=./packaged-app
-   - electron-installer-dmg ./packaged-app/CTVisualizer-darwin-x64/CTVisualizer.app CTVisualizer --out=./dmg
+   - tar -zcvf CTVisualizer-darwin-x64.tar.gz ./packaged-app/CTVisualizer-darin-x64/
   artifacts:
     paths:
-      - dmg/CTVisualizer.dmg
+      - CTVisualizer-darwin-x64.tar.gz
