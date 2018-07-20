@@ -1,1 +1,1 @@
-{"quorum":"m0091032.cintel.lab.ppops.net,m0091033.cintel.lab.ppops.net,m0091031.cintel.lab.ppops.net","port":"2181","hbase-node":"/hbase","principal":"traryan@CINTEL-CDH.PROOFPOINT.COM","path-to-keytab":"/Users/traryan/traryan.keytab"}
+{"quorum":"","port":"","hbase-node":"","principal":"","path-to-keytab":""}
