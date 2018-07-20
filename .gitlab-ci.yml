@@ -9,28 +9,27 @@ cache:
   paths:
   - node_modules/
   
-before_script:
-  - apt update
-  - apt install curl -y
-  - curl -sL https://deb.nodesource.com/setup_10.x | bash -
-  - apt install nodejs -y
-  - apt install npm -y
-#   - apt install python-pip -y
-#   - pip install virtualenv
-#   - virtualenv venv
-#   - source venv/bin/activate
-#   - pip install nodeenv
-  - export NPM_CONFIG_PREFIX=/home/node/.npm-global
-  - export PATH=$PATH:/home/node/.npm-global/bin
-  - npm install electron-packager -g
-  - npm install electron-installer-dmg -g
+# before_script:
+#   - apt update
+#   - apt install curl -y
+#   - curl -sL https://deb.nodesource.com/setup_10.x | bash -
+#   - apt install nodejs -y
+#   - apt install npm -y
+# #   - apt install python-pip -y
+# #   - pip install virtualenv
+# #   - virtualenv venv
+# #   - source venv/bin/activate
+# #   - pip install nodeenv
+#   - export NPM_CONFIG_PREFIX=/home/node/.npm-global
+#   - export PATH=$PATH:/home/node/.npm-global/bin
+#   - npm install electron-packager -g
+#   - npm install electron-installer-dmg -g
 
 buildDMG:
   script:
    - npm install
-   - electron-packager . CTVisualizer --platform=darwin --arch=x64 --out=./packaged-app
-   - electron-installer-dmg ./packaged-app/CTVisualizer-darwin-x64/CTVisualizer.app CTVisualizer --out=./dmg
-  artifacts:
-    paths:
-      - dmg/CTVisualizer.dmg
+   - electron-builder build --mac
+#   artifacts:
+#     paths:
+#       - dmg/CTVisualizer.dmg
 
