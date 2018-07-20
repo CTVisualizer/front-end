@@ -17,7 +17,7 @@ before_script:
 buildTar:
   script:
    - npm install
-   - electron-packager . CTVisualizer --platform=darwin --arch=x64 --out=./packaged-app --app-category-type=public.app-category.developer-tools --osx-sign.identity="Connor and Travis"
+   - electron-packager . CTVisualizer --platform=darwin --arch=x64 --out=./packaged-app --app-category-type=public.app-category.developer-tools
    - tar -zcvf CTVisualizer-darwin-x64.tar.gz ./packaged-app/CTVisualizer-darwin-x64/*
   artifacts:
     paths:
