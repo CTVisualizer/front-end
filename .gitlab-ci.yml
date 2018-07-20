@@ -10,6 +10,7 @@ cache:
   - node_modules/
   
 before_script:
+    - su node
     - whoami
 #   - apt update
 #   - apt install curl -y
@@ -21,16 +22,18 @@ before_script:
 # #   - virtualenv venv
 # #   - source venv/bin/activate
 # #   - pip install nodeenv
-#   - export NPM_CONFIG_PREFIX=/home/node/.npm-global
-#   - export PATH=$PATH:/home/node/.npm-global/bin
-#   - npm install electron-packager -g
-#   - npm install electron-installer-dmg -g
+  - export NPM_CONFIG_PREFIX=/home/node/.npm-global
+  - export PATH=$PATH:/home/node/.npm-global/bin
+  - npm install electron-packager -g
+  - npm install electron-installer-dmg -g
 
 buildDMG:
   script:
    - npm install
-   - electron-builder build --mac
-#   artifacts:
-#     paths:
-#       - dmg/CTVisualizer.dmg
+   - electron-packager . CTVisualizer --platform=darwin --arch=x64 --out=./packaged-app
+   - electron-installer-dmg ./packaged-app/CTVisualizer-darwin-x64/CTVisualizer.app CTVisualizer --out=./dmg
+  artifacts:
+    paths:
+      - dmg/CTVisualizer.dmg
+
 
