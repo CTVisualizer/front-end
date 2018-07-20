@@ -17,7 +17,8 @@ before_script:
 #   - virtualenv venv
 #   - source venv/bin/activate
 #   - pip install nodeenv
-  - npm install node-gyp -g
+  - export NPM_CONFIG_PREFIX=/home/node/.npm-global
+  - export PATH=$PATH:/home/node/.npm-global/bin
   - npm install electron-packager -g
   - npm install electron-installer-dmg -g
 
