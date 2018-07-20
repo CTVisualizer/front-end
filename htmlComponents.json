@@ -1,6 +1,6 @@
 {
     "incompleteSettingsWarning": "<div class='ui negative message'><div class='header'>Unable to Connect</div><p>The Settings tab contains empty fields.</p></div>",
-    "successfulStopMessage": "<div class='ui positive message'><div class='header'>Stopped All Queries</div><p>All unfinished queries are no longer running.</p></div>",
+    "failedlStopMessage": "<div class='ui negative message'><div class='header'>Failed to Stop Queries</div><p>Unable to stop running queries at this time.</p></div>",
     "emptyErrorWarning": "<div id='errorWarning'></div>",
     "helpComponent": "<container id='mainComponent'><div class='ui container'><h2>Help</h2><p>This is a database visualizer tool built by Indianpolis Proofpoint Interns as a part of Hack Day 2018. It is intended to be used with Apache Phoenix for NTX development. You must include the Phoenix Driver you are using in the settings tab.</p></div></container>",
     "settingsComponent": "<container id=testComponent><div class='ui container'><h2>Settings</h2><div id='errorWarning'></div><form action='javascript:updateSettings();'class='ui form'><div class=field><label>Quorum</label> <input id='quorum'></div><div class=field><label>Port</label> <input id='port'></div><div class=field><label>Hbase Node</label> <input id='hbase-node'></div><div class=field><label>Principal</label> <input id='principal'></div><div class=field><label>Absolute Path to Keytab</label> <input id='path-to-keytab'></div><button class='ui positive button' type='submit'>Save</button></form> <div class='ui divider'></div> <h3>Active Driver</h3> <p id='driver-version'>No Driver Selected<p><button class='small ui blue button' onclick='manageDrivers()'>Manage Drivers</button></div></container>",
@@ -15,5 +15,14 @@
     "emptyNavbarComponent" : "<div class='menu ui' id='navbar'><div class='item header'>CTVisualizer</div></div>",
     "defaultConnectButton" : "<button class='blue button small ui' id='connectButton' onclick='createConnection()'><i class='icon play'></i> Connect to Database</button>",
     "connectingButton" : "<button class='blue button small ui' id='connectButton''><i class='spinner loading icon'></i>Connecting</button>",
-    "killConnectionButton" : "<button class='red button small ui' id='connectButton' onclick='killConnection()'><i class='stop icon'></i>End Connection</button>"
+    "killConnectionButton" : "<button class='red button small ui' id='connectButton' onclick='killConnection()'><i class='stop icon'></i>End Connection</button>",
+    "queryLoadingPlaceholder" : "<div id='queryResponse'><i class='spinner loading icon'></i><h4 style='color: green'>Executing query...</h4></div>",
+    "emptyDownloadProgress" : "<h3 id='downloadProgress'> Download Progress: </h3>",
+    "endDownloadButton" : "<button class='small red ui button' id='endDownloadButton' onclick='quitDownload()'><i class='icon stop'></i>Stop Download</div>",
+    "downloadSpinnerIcon" : "<i id='downloadSpinner' class='spinner loading icon'></i>",
+    "driverDownloadFailedMessage" : "<h3 id='downloadProgress'>Unable to locate the Phoenix driver you entered.</h3>",
+    "invalidDriverErrorMessage" : "<h3 id='downloadProgress'>Please enter a valid driver name.</h3>",
+    "notConnectedError" : "<div class='ui negative message'><div class='header'>Not Connected</div><p>You must start a connection to make queries.</p></div>",
+    "connectionFailedWarning" : "<div class='ui negative message'><div class='header'>Connection Attempt Failed</div><p>Unable to connect to the database with your given settings.</p></div>",
+    "connectionActiveStatus" : "<h4 id='dbConnectionStatus' style='color: green'>Connection is active</h4>"
 }

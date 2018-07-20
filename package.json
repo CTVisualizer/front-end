@@ -20,15 +20,19 @@
     "electron": "1.8.7"
   },
   "dependencies": {
+    "codemirror": "^5.39.0",
     "express": "^4.16.3",
+    "highlightjs": "^9.10.0",
     "http": "0.0.0",
     "os": "^0.1.1",
     "path": "^0.12.7",
     "prismjs": "^1.15.0",
+    "request": "^2.87.0",
     "request-progress": "^3.0.0",
     "semantic-ui": "^2.3.3",
     "shelljs": "^0.8.2",
     "table-builder": "^2.1.1",
+    "targz": "^1.0.1",
     "then-request": "^6.0.0"
   }
 }

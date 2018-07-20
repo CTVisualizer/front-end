@@ -12,9 +12,21 @@
     <!-- Stylesheets -->
     <link rel="stylesheet" type="text/css" href="semantic/dist/semantic.min.css">
     <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="codemirror/lib/codemirror.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css?family=Ubuntu+Mono|Ubuntu+Mono:700');
+        table,
+        textarea {
+            font-family: 'Ubuntu Mono', monospace;
+        }
+
+        th {
+            font-weight: 700
+        }
+    </style>
 
     <body>
-
         <!-- Menu Bar -->
         <div class="ui menu" id="navbar">
             <div class="header item">
@@ -64,8 +76,13 @@
                                 Clear Results
                             </button>
                         </div>
-                        <h3>Results</h3>
-                        <table id="queryResponse" class="ui celled striped table">
+                        <br>
+                        <div id="resultsHeader">
+                            <h3>Results</h3>
+                        </div>
+                        <div id="queryResponse" style="overflow-y: scroll; max-height:40vh;">
+                            <table class="ui celled striped table"></table>
+                        </div>
                         </table>
                     </div>
                 </container>
@@ -74,11 +91,16 @@
     </body>
 
     <!-- Scripts -->
-    <script>
-        delete module.exports
-    </script>
+    <script> delete module.exports </script>
     <script src="https://code.jquery.com/jquery-3.2.1.js"></script>
     <script src="window.js"></script>
     <script src="semantic/dist/semantic.min.js"></script>
+    <script src="codemirror/lib/codemirror.js"></script>
+    <script src="codemirror/sql.js"></script>
+    <script src="codemirror/mode/javascript/javascript.js"></script>
+    <script>var codeMirrorWindow = CodeMirror.fromTextArea(document.getElementById("queryInput"), {
+            lineNumbers: true,
+            mode: "text/x-sql"
+        });</script>
 
 </html>
