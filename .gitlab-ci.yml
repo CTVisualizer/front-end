@@ -10,8 +10,8 @@ cache:
   - node_modules/
   
 before_script:
-    - su node
-    - whoami
+        - su node
+        - whoami
 #   - apt update
 #   - apt install curl -y
 #   - curl -sL https://deb.nodesource.com/setup_10.x | bash -
@@ -22,10 +22,10 @@ before_script:
 # #   - virtualenv venv
 # #   - source venv/bin/activate
 # #   - pip install nodeenv
-  - export NPM_CONFIG_PREFIX=/home/node/.npm-global
-  - export PATH=$PATH:/home/node/.npm-global/bin
-  - npm install electron-packager -g
-  - npm install electron-installer-dmg -g
+      - export NPM_CONFIG_PREFIX=/home/node/.npm-global
+      - export PATH=$PATH:/home/node/.npm-global/bin
+      - npm install electron-packager -g
+      - npm install electron-installer-dmg -g
 
 buildDMG:
   script:
