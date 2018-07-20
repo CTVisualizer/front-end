@@ -17,8 +17,8 @@ before_script:
 #   - virtualenv venv
 #   - source venv/bin/activate
 #   - pip install nodeenv
-  - npm install electron-packager
-  - npm install electron-installer-dmg
+  - npm install electron-packager -g
+  - npm install electron-installer-dmg -g
 
 buildDMG:
   script:
