@@ -11,7 +11,7 @@ cache:
   
 before_script:
   - apt update
-  - curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
+  - curl -sL https://deb.nodesource.com/setup_10.x | bash -
   - apt install nodejs=10.7.0 -y
   - apt install npm=6.2.0 -y
 #   - apt install python-pip -y
