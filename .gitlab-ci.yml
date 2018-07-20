@@ -19,10 +19,10 @@ before_script:
 #   - pip install nodeenv
   - pwd
   - whoami
-  - export NPM_CONFIG_PREFIX=/builds/ctvisualizer/front-end/.npm-global
-  - export PATH=$PATH:/builds/ctvisualizer/front-end/.npm-global/bin
-  - npm install electron-packager -g
-  - npm install electron-installer-dmg -g
+#   - export NPM_CONFIG_PREFIX=/builds/ctvisualizer/front-end/.npm-global
+#   - export PATH=$PATH:/builds/ctvisualizer/front-end/.npm-global/bin
+  - npm install electron-packager -g --unsafe-perm
+  - npm install electron-installer-dmg -g --unsafe-perm
 
 buildDMG:
   script:
