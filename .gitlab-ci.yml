@@ -10,24 +10,15 @@ cache:
   - node_modules/
   
 before_script:
-#   - apt update
-#   - apt install npm -y
-#   - apt install python-pip -y
-#   - pip install virtualenv
-#   - virtualenv venv
-#   - source venv/bin/activate
-#   - pip install nodeenv
   - pwd
   - whoami
-#   - export NPM_CONFIG_PREFIX=/builds/ctvisualizer/front-end/.npm-global
-#   - export PATH=$PATH:/builds/ctvisualizer/front-end/.npm-global/bin
   - npm install electron-packager -g --unsafe-perm
 
 buildTar:
   script:
    - npm install
-   - electron-packager . CTVisualizer --platform=darwin --arch=x64 --out=./packaged-app
-   - tar -zcvf CTVisualizer-darwin-x64.tar.gz ./packaged-app/CTVisualizer-darwin-x64/
+   - electron-packager . CTVisualizer --platform=darwin --arch=x64 --out=./packaged-app --app-category-type=public.app-category.developer-tools --osx-sign.identity="Connor and Travis"
+   - tar -zcvf CTVisualizer-darwin-x64.tar.gz ./packaged-app/CTVisualizer-darwin-x64/*
   artifacts:
     paths:
       - CTVisualizer-darwin-x64.tar.gz
