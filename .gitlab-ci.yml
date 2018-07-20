@@ -12,7 +12,10 @@ cache:
 before_script:
   - apt update
   - apt install npm -y
-  - apt install python3 -y
+  - apt install pip3 -y
+  - pip3 install virtualenv
+  - virtualenv venv
+  - source venv/bin/activate
   - pip install nodeenv
   - npm install electron-packager
   - npm install electron-installer-dmg
