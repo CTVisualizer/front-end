@@ -19,9 +19,8 @@ before_script:
 #   - pip install nodeenv
   - pwd
   - whoami
-  - npm install node-gyp -g
-  - export NPM_CONFIG_PREFIX=/root/.npm-global
-  - export PATH=$PATH:/root/.npm-global/bin
+  - export NPM_CONFIG_PREFIX=/builds/ctvisualizer/front-end/.npm-global
+  - export PATH=$PATH:/builds/ctvisualizer/front-end/.npm-global/bin
   - npm install electron-packager -g
   - npm install electron-installer-dmg -g
 
