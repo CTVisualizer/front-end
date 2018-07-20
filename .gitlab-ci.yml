@@ -17,6 +17,9 @@ before_script:
 #   - virtualenv venv
 #   - source venv/bin/activate
 #   - pip install nodeenv
+  - whoami
+  - su node
+  - whoami
   - npm install node-gyp -g
   - export NPM_CONFIG_PREFIX=/home/node/.npm-global
   - export PATH=$PATH:/home/node/.npm-global/bin
