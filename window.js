@@ -7,10 +7,11 @@ const progress = require('request-progress');
 const homedir = require('os').homedir();
 const targz = require('targz');
 
-//Front-End Configs
+//Local JSON
 var htmlComponents = require("./htmlComponents.json");
 const pathToSettings = "./config/settings.json";
 const pathToDriverSettings = "./config/driversettings.json";
+var pathToQueryHistory = "./queryHistory.json";
 
 //Global Stated Data
 var currentComponent = 1; // current component which is being viewed (1=DB visualizer, 2=help, 3=drivermanager, 4=help)
@@ -18,6 +19,20 @@ var sqlVisualizerComponent; // current HTML state of the Sql Visualizer componen
 var currentlyDownloading = false; // is a driver being downloaded
 var driverDownloadRequest; // request for downloading drivers (needs to be global)
 var connected = false;
+var codeMirrorWindow;
+var currentQuery;
+var queryResults;
+var currentQueryIndex = 0;
+
+$(document).ready(function () { // on document ready, populate query window with most recent query
+  $.getJSON(pathToQueryHistory, function (queryHistoryJson) {
+    if (currentQueryIndex != 19 && queryHistoryJson[0] != undefined) {
+      codeMirrorWindow.setValue(queryHistoryJson[0]);
+      currentQueryIndex = 0;
+    }
+  });
+  colorHistoryArrows();
+});
 
 // Queries local connection and generates table with results
 function generateTable() {
@@ -30,21 +45,32 @@ function generateTable() {
         $("#errorWarning").html(htmlComponents["incompleteSettingsWarning"]);
       } else {
         $("#errorWarning").html(htmlComponents["emptyErrorWarning"]);
-        var preparedQuery = prepareQuery(codeMirrorWindow.getValue());
+        var rawQuery = codeMirrorWindow.getValue();
+        var preparedQuery = prepareQuery(rawQuery);
         if (!preparedQuery) {
           $("#errorWarning").html(htmlComponents["missingQueryError"]);
         } else {
           hideNavbar();
           $("#queryResponse").html("<h3>Executing query...</h3>");
+          document.getElementById('runIcon').outerHTML = "<i class='spinner loading icon' id='runIcon'></i>";
           request('http://localhost:8080/execute/' + preparedQuery, function (error, response, body) {
+            updateQueryHistory(rawQuery);
             resumeNavbar();
+            document.getElementById('runIcon').outerHTML = "<i class='play icon' id='runIcon'></i>";
             if (error) {
               $("#errorWarning").html(htmlComponents["databaseRequestError"]);
               $("queryResponse").html("<table class='ui celled striped table'></table></div>");
             } else {
-              var queryResults = JSON.parse(body);
+              console.log(body);
+              queryResults = JSON.parse(body);
               var headers = buildHeaders(queryResults);
               var data = queryResults['data'];
+              if (data.length > 100) {
+                var firstHundredData = data.slice(0, 101);
+                var dataForTable = firstHundredData;
+              } else {
+                var dataForTable = data;
+              }
               var tableHtml = (
                 (new Table({
                   "class": "ui fixed single line celled table selectable compact",
@@ -52,12 +78,18 @@ function generateTable() {
                   "style": "overflow-x:auto"
                 }))
                   .setHeaders(headers)
-                  .setData(data)
+                  .setData(dataForTable)
                   .render()
               );
               $("#queryResponse").html(tableHtml);
               stylePrimaryKeys(queryResults);
-              //$("#resultsText").html(data.length+" Results");
+              document.getElementById("numberOfResults").innerHTML = data.length + " Results";
+              if (data.length == 1)
+                document.getElementById("numberOfResults").innerHTML = "1 Result";
+              if (data.length > 100) {
+                document.getElementById("expandTableOption").outerHTML = "<button class='ui button mini blue' id='expandTableOption' onclick='expandTableResults()'>Display all results</button>"
+                document.getElementById("numberOfResults").innerHTML = data.length + " Results (Showing 100)";
+              }
               $('td').addClass(getColorForStatusCode(response.statusCode));
             }
           });
@@ -67,13 +99,34 @@ function generateTable() {
   }
 }
 
+function expandTableResults() {
+  var data = queryResults['data'];
+  var headers = buildHeaders(queryResults);
+  var tableHtml = (
+    (new Table({
+      "class": "ui fixed single line celled table selectable compact",
+      "id": "queryResponse",
+      "style": "overflow-x:auto"
+    }))
+      .setHeaders(headers)
+      .setData(data)
+      .render()
+  );
+  $("#queryResponse").html(tableHtml);
+  stylePrimaryKeys(queryResults);
+  document.getElementById("expandTableOption").outerHTML = "<div id='expandTableOption'></div>"
+  document.getElementById("numberOfResults").innerHTML = data.length + " Results";
+  if (data.length == 1)
+    document.getElementById("numberOfResults").innerHTML = "1 Result";
+}
+
 function stylePrimaryKeys(queryResults) {
   if (!queryResults['metadata']['multipleTablesRepresented']) {
     for (var i = 0; i < queryResults['metadata']['primaryKeys'].length; i++) { // add key icon to primary key headers
       var primaryKey = queryResults['metadata']['primaryKeys'][i]['name'];
       $("th").each(function (index) {
         if ($(this).text() == primaryKey) {
-          $(this).html($(this).html() + "<i class='gray key icon'><i>");
+          $(this).html($(this).html() + " <i style='font-size:10px' class='gray key icon'><i>");
         }
       });
     }
@@ -81,7 +134,7 @@ function stylePrimaryKeys(queryResults) {
 }
 
 function getColorForStatusCode(statusCode) {
-  var tableColorsMap = { 550: "negative", 200: "" };
+  var tableColorsMap = { 550: "negative", 200: "", 202: "positive" };
   if (tableColorsMap[statusCode] != undefined)
     return tableColorsMap[statusCode];
   else
@@ -109,7 +162,8 @@ function buildHeaders(queryResults) {
 function clearResults() {
   $("#queryResponse").html("<table></table>");
   $("#errorWarning").html(htmlComponents["emptyErrorWarning"]);
-  //document.getElementById("#resultsHeader").outerHTML="<h3 id='resultsText'>Results</h3>";
+  document.getElementById("numberOfResults").innerHTML = "";
+  document.getElementById("expandTableOption").outerHTML = '<div id="expandTableOption"></div>';
 }
 
 function stopQuery() {
@@ -134,17 +188,19 @@ function validateSettingsExist(settingsJson) {
 //COMPONENT-RELATED FUNCTIONS
 function switchComponent(newComponent) {
   if (!currentlyDownloading) {
-    if (currentComponent == 1){
-      document.getElementById("queryInput").outerHTML='<div id=""></div>';
-      codeMirrorWindow = '';
+    if (currentComponent == 1) {
+      currentQuery = codeMirrorWindow.getValue();
+      $(".CodeMirror").remove();
+      codeMirrorWindow = "";
       sqlVisualizerComponent = $("#mainComponent").html();
     }
     if (newComponent == 1) { // DB Visualizer
       $("#mainComponent").html(sqlVisualizerComponent);
-      var codeMirrorWindow = CodeMirror.fromTextArea(document.getElementById("queryInput"), {
+      codeMirrorWindow = CodeMirror.fromTextArea(document.getElementById("queryInput"), {
         lineNumbers: true,
         mode: "text/x-sql"
       });
+      codeMirrorWindow.setValue(currentQuery);
     } else if (newComponent == 2) { // Settings
       $("#mainComponent").html(htmlComponents["settingsComponent"]);
       populateSettingsFields();
@@ -163,6 +219,46 @@ function hideNavbar() {
 
 function resumeNavbar() {
   document.getElementById("navbar").outerHTML = htmlComponents["navbarComponent"];
+}
+
+function backwardQuery() {
+  $.getJSON(pathToQueryHistory, function (queryHistoryJson) {
+    if (currentQueryIndex != 19 && queryHistoryJson[currentQueryIndex + 1] != undefined) {
+      currentQueryIndex++;
+      var currentQueryText = queryHistoryJson[currentQueryIndex];
+      codeMirrorWindow.setValue(currentQueryText);
+      colorHistoryArrows();
+    }
+  });
+}
+
+function forwardQuery() {
+  $.getJSON(pathToQueryHistory, function (queryHistoryJson) {
+    if (currentQueryIndex != 0 && queryHistoryJson[currentQueryIndex - 1] != undefined) {
+      currentQueryIndex--;
+      var currentQueryText = queryHistoryJson[currentQueryIndex];
+      codeMirrorWindow.setValue(currentQueryText);
+      colorHistoryArrows();
+    }
+  });
+}
+
+function colorHistoryArrows() {
+  $.getJSON(pathToQueryHistory, function (queryHistoryJson) {
+    if (currentQueryIndex == 0 || queryHistoryJson[currentQueryIndex - 1] == undefined) {
+      $('#forwardArrow').removeClass('primary');
+    }
+    else {
+      $('#forwardArrow').addClass('primary');
+    }
+    if (currentQueryIndex == 19 || queryHistoryJson[currentQueryIndex + 1] == undefined) {
+      $('#backArrow').removeClass('primary');
+    }
+    else {
+      $('#backArrow').addClass('primary');
+    }
+  }
+  );
 }
 
 function manageDrivers() {
@@ -365,62 +461,83 @@ function downloadEnded() { // any time a download ends
   currentlyDownloading = false;
 }
 
+function updateQueryHistory(newQuery) {
+  $.getJSON(pathToQueryHistory, function (queryHistoryJson) {
+    var newJson = queryHistoryJson;
+    for (var i = 19; i > 0; i--) {
+      if (newJson[i - 1] != undefined)
+        newJson[i] = newJson[i - 1];
+    }
+    newJson[0] = newQuery;
+    fs.writeFile(pathToQueryHistory, JSON.stringify(newJson), 'utf8', function (err) {
+      if (err)
+        console.log("Error writing query history");
+    });
+  });
+  currentQueryIndex = 0;
+  colorHistoryArrows();
+}
+
 // PHOENIX CONNECTION
 function createConnection() {
   document.getElementById("connectButton").outerHTML = htmlComponents["connectingButton"];
   hideNavbar();
-
   $.getJSON(pathToSettings, function (settingsJson) {
     $.getJSON(pathToDriverSettings, function (driverSettingsJson) {
+      if (!validateSettingsExist(settingsJson)) {
+        connectionFailed();
+        $("#errorWarning").html(htmlComponents["incompleteSettingsWarning"]);
+      } else {
+        var shellScript = spawn('./node_modules/phoenix-java-adapter/bin/phoenix-adapter',
+          [
+            '-quorum=' + settingsJson["quorum"],
+            '-port=' + settingsJson["port"],
+            '-hbaseNode=' + settingsJson["hbase-node"],
+            '-principal=' + settingsJson["principal"],
+            '-phoenixClient=' + homedir + "/.ctvisualizer/" + driverSettingsJson["activeDriver"],
+            '-keytab=' + settingsJson["path-to-keytab"]
+          ]
+        );
 
-      var shellScript = spawn('node_modules/phoenix-java-adapter/bin/phoenix-adapter',
-        [
-          '-quorum=' + settingsJson["quorum"],
-          '-port=' + settingsJson["port"],
-          '-hbaseNode=' + settingsJson["hbase-node"],
-          '-principal=' + settingsJson["principal"],
-          '-phoenixClient=' + homedir + "/.ctvisualizer/" + driverSettingsJson["activeDriver"],
-          '-keytab=' + settingsJson["path-to-keytab"]
-        ]
-      );
-
-      shellScript.stdout.on('data', (data) => {
-        console.log(`stdout: ${data}`);
-      });
-
-      shellScript.stderr.on('data', (data) => {
-        console.log(`stderr: ${data}`);
-      });
-
-      shellScript.on('close', (code) => {
-        console.log(`child process exited with code ${code}`);
-      });
-
-      // continiously try a health check until success or 10 seconds pass
-      var attempts = 0;
-      var requestLoop = setInterval(function () {
-        request({
-          url: "http://localhost:8080/health",
-          method: "GET",
-        }, function (error, response, body) {
-          if (attempts == 10) {
-            clearInterval(requestLoop);
-            connectionFailed();
-            $("#errorWarning").html(htmlComponents["connectionFailedWarning"]);
-          }
-          else if (!error && response.statusCode == 200) {
-            console.log('Connection successful!');
-            clearInterval(requestLoop);
-            connectionSuccess();
-          } else {
-            console.log('Connection attempt failed. Attempts (out of 10): ' + attempts);
-          }
-          attempts++;
+        shellScript.stdout.on('data', (data) => {
+          console.log(`stdout: ${data}`);
         });
-      }, 1000);
+
+        shellScript.stderr.on('data', (data) => {
+          console.log(`stderr: ${data}`);
+        });
+
+        shellScript.on('close', (code) => {
+          console.log(`child process exited with code ${code}`);
+        });
+
+        // continiously try a health check until success or 10 seconds pass
+        var attempts = 0;
+        var requestLoop = setInterval(function () {
+          request({
+            url: "http://localhost:8080/health",
+            method: "GET",
+          }, function (error, response, body) {
+            if (attempts == 10) {
+              clearInterval(requestLoop);
+              connectionFailed();
+              $("#errorWarning").html(htmlComponents["connectionFailedWarning"]);
+            }
+            else if (!error && response.statusCode == 200) {
+              console.log('Connection successful!');
+              clearInterval(requestLoop);
+              connectionSuccess();
+            } else {
+              console.log('Connection attempt failed. Attempts (out of 10): ' + attempts);
+            }
+            attempts++;
+          });
+        }, 1000);
+      }
     });
   });
 }
+
 
 function connectionSuccess() {
   connected = true;

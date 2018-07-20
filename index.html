@@ -54,36 +54,67 @@
                         <div id="errorWarning"></div>
                         <div class="ui form">
                             <div class="field">
-                                <h2>DB Connection</h2>
+                                <h2>Database Connection</h2>
                                 <h4 id='dbConnectionStatus' style="color: red">No Active Connection</h4>
                                 <button class="ui blue button small" id="connectButton" onclick="createConnection()">
                                     <i class="play icon"></i>
                                     Connect to Database
                                 </button>
-                                <h3>Query</h3>
+                                <div height=10px><br></div>
+                                <div class="ui grid">
+                                    <div class="eight wide column">
+                                        <div style="text-align: left">
+                                            <h3> Query</h3>
+                                        </div>
+                                    </div>
+                                    <div class="eight wide column">
+                                        <div style="text-align: right">
+                                            <button class="ui left labeled icon button small" id='backArrow' onclick="backwardQuery()">
+                                                Back
+                                                <i class="left arrow icon"></i>
+                                            </button>
+                                            <button class="ui right labeled icon button small" id='forwardArrow' onclick="forwardQuery()">
+                                                <i class="right arrow icon"></i>
+                                                Next
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                                 <textarea id="queryInput" placeholder="SELECT * FROM..."></textarea>
                             </div>
-                            <button class="ui green button" onclick="generateTable()">
-                                <i class="play icon"></i>
-                                Run
-                            </button>
-                            <button class="ui red button" onclick="stopQuery()">
-                                <i class="stop icon"></i>
-                                Stop
-                            </button>
-                            <button class="ui blue button" onclick="clearResults()">
-                                <i class="redo icon"></i>
-                                Clear Results
-                            </button>
+                            <div class="ui grid">
+                                <div class="eight wide column">
+                                    <div style="text-align: left">
+                                        <button class="ui green button" onclick="generateTable()">
+                                            <i class="play icon" id='runIcon'></i>
+                                            Run
+                                        </button>
+                                        <button class="ui red button" onclick="stopQuery()">
+                                            <i class="stop icon"></i>
+                                            Stop
+                                        </button>
+                                        <button class="ui blue button" onclick="clearResults()">
+                                            <i class="redo icon"></i>
+                                            Clear Results
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <br>
-                        <div id="resultsHeader">
-                            <h3>Results</h3>
+                        <div class="ui grid">
+                            <div class="eight wide column">
+                                <h3 style="text-align: left">Results</h3>
+                            </div>
+                            <div class="eight wide column">
+                                <p id="numberOfResults" style="text-align: right"></p>
+                            </div>
                         </div>
-                        <div id="queryResponse" style="overflow-y: scroll; max-height:40vh;">
+                        <div id="queryResponse" style="overflow-y: scroll; max-height:30vh;">
                             <table class="ui celled striped table"></table>
                         </div>
-                        </table>
+                        <br>
+                        <div id="expandTableOption"></div>
                     </div>
                 </container>
             </div>

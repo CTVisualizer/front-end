@@ -34,6 +34,7 @@
     "shelljs": "^0.8.2",
     "table-builder": "^2.1.1",
     "targz": "^1.0.1",
-    "then-request": "^6.0.0"
+    "then-request": "^6.0.0",
+    "phoenix-java-adapter": "^1.0.5"
   }
 }
