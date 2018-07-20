@@ -10,8 +10,8 @@ cache:
   - node_modules/
   
 before_script:
-  - apt update
-  - apt install npm -y
+#   - apt update
+#   - apt install npm -y
 #   - apt install python-pip -y
 #   - pip install virtualenv
 #   - virtualenv venv
