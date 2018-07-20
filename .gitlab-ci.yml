@@ -11,6 +11,7 @@ cache:
   
 before_script:
   - apt update
+  - apt install nodejs -y
   - apt install npm -y
 #   - apt install python-pip -y
 #   - pip install virtualenv
