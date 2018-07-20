@@ -43,7 +43,6 @@ function generateTable() {
               $("queryResponse").html("<table class='ui celled striped table'></table></div>");
             } else {
               var queryResults = JSON.parse(body);
-              console.log(queryResults);
               var headers = buildHeaders(queryResults);
               var data = queryResults['data'];
               var tableHtml = (
@@ -57,6 +56,7 @@ function generateTable() {
                   .render()
               );
               $("#queryResponse").html(tableHtml);
+              stylePrimaryKeys(queryResults);
               //$("#resultsText").html(data.length+" Results");
               $('td').addClass(getColorForStatusCode(response.statusCode));
             }
@@ -64,6 +64,19 @@ function generateTable() {
         }
       }
     });
+  }
+}
+
+function stylePrimaryKeys(queryResults) {
+  if (!queryResults['metadata']['multipleTablesRepresented']) {
+    for (var i = 0; i < queryResults['metadata']['primaryKeys'].length; i++) { // add key icon to primary key headers
+      var primaryKey = queryResults['metadata']['primaryKeys'][i]['name'];
+      $("th").each(function (index) {
+        if ($(this).text() == primaryKey) {
+          $(this).html($(this).html() + "<i class='gray key icon'><i>");
+        }
+      });
+    }
   }
 }
 
@@ -104,7 +117,7 @@ function stopQuery() {
     url: "http://localhost:8080/stop",
     method: "DELETE",
   }, function (error, response, body) {
-    if(response.statusCode==200)
+    if (response.statusCode == 200)
       resumeNavbar();
   });
 }
@@ -121,10 +134,17 @@ function validateSettingsExist(settingsJson) {
 //COMPONENT-RELATED FUNCTIONS
 function switchComponent(newComponent) {
   if (!currentlyDownloading) {
-    if (currentComponent == 1)
+    if (currentComponent == 1){
+      document.getElementById("queryInput").outerHTML='<div id=""></div>';
+      codeMirrorWindow = '';
       sqlVisualizerComponent = $("#mainComponent").html();
+    }
     if (newComponent == 1) { // DB Visualizer
       $("#mainComponent").html(sqlVisualizerComponent);
+      var codeMirrorWindow = CodeMirror.fromTextArea(document.getElementById("queryInput"), {
+        lineNumbers: true,
+        mode: "text/x-sql"
+      });
     } else if (newComponent == 2) { // Settings
       $("#mainComponent").html(htmlComponents["settingsComponent"]);
       populateSettingsFields();
@@ -199,7 +219,7 @@ function populateAvailableDrivers() {
     fs.mkdirSync(driverLocation);
   }
   fs.readdirSync(driverLocation).forEach(file => {
-    if(file.substr(file.length - 4) == ".jar")
+    if (file.substr(file.length - 4) == ".jar")
       arrayOfDrivers.push({ "name": file, "value": file });
   });
   $('.ui.dropdown').dropdown({ // populate dropdown
@@ -292,31 +312,31 @@ function downloadDriver() { // process for downloading a new driver
 function extractJar(fileToExtract) {
   var outputDirectoryName = fileToExtract.replace(".tar.gz", "");
   targz.decompress({
-    src: homedir+"/.ctvisualizer/"+fileToExtract,
-    dest: homedir+"/.ctvisualizer/"+outputDirectoryName,
+    src: homedir + "/.ctvisualizer/" + fileToExtract,
+    dest: homedir + "/.ctvisualizer/" + outputDirectoryName,
   }, function (err) {
     if (err) {
       console.log("Error extracting jar");
       downloadEnded();
     } else {
       document.getElementById("downloadProgress").outerHTML = "<h3 id='downloadProgress'>Locating extracted jar...</h3>";
-      copyJarFile(homedir+"/.ctvisualizer/"+outputDirectoryName+"/"+outputDirectoryName+"/"+outputDirectoryName.replace("bin", "client.jar").replace("apache-",""), homedir+"/.ctvisualizer/"+outputDirectoryName.replace("bin", "client.jar").replace("apache-",""));
+      copyJarFile(homedir + "/.ctvisualizer/" + outputDirectoryName + "/" + outputDirectoryName + "/" + outputDirectoryName.replace("bin", "client.jar").replace("apache-", ""), homedir + "/.ctvisualizer/" + outputDirectoryName.replace("bin", "client.jar").replace("apache-", ""));
     }
   });
 }
 
 function copyJarFile(source, target) {
   var readStream = fs.createReadStream(source);
-  readStream.on("error", function(err) {
-    console.log("Read extracted file error: "+err);
+  readStream.on("error", function (err) {
+    console.log("Read extracted file error: " + err);
     downloadEnded();
   });
   var writeStream = fs.createWriteStream(target);
-  writeStream.on("error", function(err) {
-    console.log("File write error: "+err);
+  writeStream.on("error", function (err) {
+    console.log("File write error: " + err);
     downloadEnded();
   });
-  writeStream.on("close", function(ex) {
+  writeStream.on("close", function (ex) {
     document.getElementById("downloadProgress").outerHTML = "<h3 id='downloadProgress'>Successfully extracted jar. New driver is available for use.</h3>";
     downloadEnded();
     populateAvailableDrivers();
@@ -353,7 +373,7 @@ function createConnection() {
   $.getJSON(pathToSettings, function (settingsJson) {
     $.getJSON(pathToDriverSettings, function (driverSettingsJson) {
 
-      var shellScript = spawn('./phoenix-adapter/bin/phoenix-adapter',
+      var shellScript = spawn('node_modules/phoenix-java-adapter/bin/phoenix-adapter',
         [
           '-quorum=' + settingsJson["quorum"],
           '-port=' + settingsJson["port"],
@@ -406,6 +426,7 @@ function connectionSuccess() {
   connected = true;
   document.getElementById("dbConnectionStatus").outerHTML = htmlComponents["connectionActiveStatus"];
   document.getElementById("connectButton").outerHTML = htmlComponents["killConnectionButton"];
+  $("#errorWarning").html(htmlComponents["emptyErrorWarning"]);
   resumeNavbar();
 }
 
