@@ -1,7 +1,7 @@
 # This file is a template, and might need editing before it works on your project.
 # Official framework image. Look for the different tagged releases at:
 # https://hub.docker.com/r/library/node/tags/
-image: node:latest
+image: ubuntu:16.04
 
 # This folder is cached between builds
 # http://docs.gitlab.com/ce/ci/yaml/README.html#cache
@@ -11,7 +11,7 @@ cache:
   
 before_script:
 #   - apt update
-#   - apt install npm -y
+  - apt install npm -y
 #   - apt install python-pip -y
 #   - pip install virtualenv
 #   - virtualenv venv
