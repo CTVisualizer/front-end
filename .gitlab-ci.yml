@@ -1,7 +1,7 @@
 # This file is a template, and might need editing before it works on your project.
 # Official framework image. Look for the different tagged releases at:
 # https://hub.docker.com/r/library/node/tags/
-image: electronuserland/electron-builder
+image: node:latest
 
 # This folder is cached between builds
 # http://docs.gitlab.com/ce/ci/yaml/README.html#cache
@@ -9,7 +9,8 @@ cache:
   paths:
   - node_modules/
   
-# before_script:
+before_script:
+    - whoami
 #   - apt update
 #   - apt install curl -y
 #   - curl -sL https://deb.nodesource.com/setup_10.x | bash -
