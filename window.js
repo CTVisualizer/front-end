@@ -11,6 +11,9 @@ const targz = require('targz');
 const activeDriverManager = require('./usersettings/active-driver-manager');
 const phoenixSettingsManager = require('./usersettings/phoenix-settings-manager');
 
+const driversDirectory = require('./usersettings/drivers-directory');
+const downloadsDirectory = require('./usersettings/downloads-directory');
+
 // Local JSON
 var htmlComponents = require("./htmlComponents.json");
 var pathToQueryHistory = "./queryHistory.json";
@@ -310,7 +313,7 @@ function populateSettingsFields() {
 }
 
 function populateAvailableDrivers() {
-  var driverLocation = homedir + "/.ctvisualizer/";
+  var driverLocation = driversDirectory.getDirectory()
   var arrayOfDrivers = [];
   if (!fs.existsSync(driverLocation)) {
     fs.mkdirSync(driverLocation);
@@ -337,7 +340,7 @@ function downloadDriver() { // process for downloading a new driver
       document.getElementById("downloadProgress").outerHTML = htmlComponents["invalidDriverErrorMessage"];
       currentlyDownloading = false;
     } else {
-      var writePath = homedir + "/.ctvisualizer/" + fileToDownload;
+      var writePath = downloadsDirectory.getDirectory() + fileToDownload;
       var downloadPath = getPhoenixDownloadPath(fileToDownload);
       var currentDownloadPercent = 0;
       var ouputFile = fs.createWriteStream(writePath);
@@ -398,15 +401,15 @@ function downloadDriver() { // process for downloading a new driver
 function extractJar(fileToExtract) {
   var outputDirectoryName = fileToExtract.replace(".tar.gz", "");
   targz.decompress({
-    src: homedir + "/.ctvisualizer/" + fileToExtract,
-    dest: homedir + "/.ctvisualizer/" + outputDirectoryName,
+    src: downloadsDirectory.getDirectory() + fileToExtract,
+    dest: downloadsDirectory.getDirectory() +  outputDirectoryName,
   }, function (err) {
     if (err) {
       console.log("Error extracting jar");
       downloadEnded();
     } else {
       document.getElementById("downloadProgress").outerHTML = "<h3 id='downloadProgress'>Locating extracted jar...</h3>";
-      copyJarFile(homedir + "/.ctvisualizer/" + outputDirectoryName + "/" + outputDirectoryName + "/" + outputDirectoryName.replace("bin", "client.jar").replace("apache-", ""), homedir + "/.ctvisualizer/" + outputDirectoryName.replace("bin", "client.jar").replace("apache-", ""));
+      copyJarFile(downloadsDirectory.getDirectory() + outputDirectoryName + "/" + outputDirectoryName + "/" + outputDirectoryName.replace("bin", "client.jar").replace("apache-", ""), driversDirectory.getDirectory() + outputDirectoryName.replace("bin", "client.jar").replace("apache-", ""));
     }
   });
 }
@@ -484,7 +487,7 @@ function createConnection() {
         '-hbaseNode=' + settingsJson["hbaseNode"],
         '-principal=' + settingsJson["principal"],
         // TODO: Modularize
-        '-phoenixClient=' + homedir + "/.ctvisualizer/" + "drivers" + activeDriverManager.getActiveDriver(),
+        '-phoenixClient=' + driversDirectory.getDirectory() + activeDriverManager.getActiveDriver(),
         '-keytab=' + settingsJson["pathToKeytab"]
       ]
     );
