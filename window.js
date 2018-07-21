@@ -1,4 +1,4 @@
-//Node Modules
+// Node Modules
 const Table = require("table-builder");
 const request = require("request");
 const { spawn } = require('child_process');
@@ -7,13 +7,15 @@ const progress = require('request-progress');
 const homedir = require('os').homedir();
 const targz = require('targz');
 
-//Local JSON
+// Local Modules
+const activeDriverManager = require('./usersettings/active-driver-manager');
+
+// Local JSON
 var htmlComponents = require("./htmlComponents.json");
 const pathToSettings = "./config/settings.json";
-const pathToDriverSettings = "./config/driversettings.json";
 var pathToQueryHistory = "./queryHistory.json";
 
-//Global Stated Data
+// Global Stated Data
 var currentComponent = 1; // current component which is being viewed (1=DB visualizer, 2=help, 3=drivermanager, 4=help)
 var sqlVisualizerComponent; // current HTML state of the Sql Visualizer component
 var currentlyDownloading = false; // is a driver being downloaded
@@ -265,9 +267,7 @@ function manageDrivers() {
   updateSettings();
   switchComponent(3);
   populateAvailableDrivers();
-  $.getJSON(pathToDriverSettings, function (driverSettingsJson) {
-    document.getElementById("activeDriverName").innerHTML = driverSettingsJson["activeDriver"];
-  });
+  document.getElementById("activeDriverName").innerHTML = activeDriverManager.getActiveDriver()
   $('.ui.dropdown').dropdown();
 }
 
@@ -302,9 +302,7 @@ function populateSettingsFields() {
     for (var i = 0; i < Object.keys(settingsJson).length; i++) {
       document.getElementById(Object.keys(settingsJson)[i]).value = settingsJson[Object.keys(settingsJson)[i]];
     }
-    $.getJSON(pathToDriverSettings, function (driverSettingsJson) {
-      document.getElementById("driver-version").innerHTML = driverSettingsJson["activeDriver"];
-    });
+    document.getElementById("driver-version").innerHTML = activeDriverManager.getActiveDriver();
   });
 }
 
@@ -324,19 +322,8 @@ function populateAvailableDrivers() {
 }
 
 function updateActiveDriver() {
-  $.getJSON(pathToDriverSettings, function (driverSettingsJson) {
-    var newActiveDriver = document.getElementsByClassName("item active selected")[0].innerHTML;
-    var newDriverData = '{ "activeDriver" : "' + newActiveDriver + '"}';
-    var newDriverJson = JSON.parse(JSON.stringify(newDriverData));
-    fs.writeFile(pathToDriverSettings, newDriverJson, function (err) {
-      if (err)
-        console.log(err);
-      else {
-        document.getElementById("activeDriverName").innerHTML = newActiveDriver;
-        $("#driverErrorWarning").html(htmlComponents["activeDriverUpdatedComponet"]);
-      }
-    });
-  });
+  var newActiveDriver = document.getElementsByClassName("item active selected")[0].innerHTML;
+  activeDriverManager.setActiveDriver(newActiveDriver);
 }
 
 function downloadDriver() { // process for downloading a new driver
@@ -483,58 +470,57 @@ function createConnection() {
   document.getElementById("connectButton").outerHTML = htmlComponents["connectingButton"];
   hideNavbar();
   $.getJSON(pathToSettings, function (settingsJson) {
-    $.getJSON(pathToDriverSettings, function (driverSettingsJson) {
-      if (!validateSettingsExist(settingsJson)) {
-        connectionFailed();
-        $("#errorWarning").html(htmlComponents["incompleteSettingsWarning"]);
-      } else {
-        var shellScript = spawn('./node_modules/phoenix-java-adapter/bin/phoenix-adapter',
-          [
-            '-quorum=' + settingsJson["quorum"],
-            '-port=' + settingsJson["port"],
-            '-hbaseNode=' + settingsJson["hbase-node"],
-            '-principal=' + settingsJson["principal"],
-            '-phoenixClient=' + homedir + "/.ctvisualizer/" + driverSettingsJson["activeDriver"],
-            '-keytab=' + settingsJson["path-to-keytab"]
-          ]
-        );
+    if (!validateSettingsExist(settingsJson)) {
+      connectionFailed();
+      $("#errorWarning").html(htmlComponents["incompleteSettingsWarning"]);
+    } else {
+      var shellScript = spawn('./node_modules/phoenix-java-adapter/bin/phoenix-adapter',
+        [
+          '-quorum=' + settingsJson["quorum"],
+          '-port=' + settingsJson["port"],
+          '-hbaseNode=' + settingsJson["hbase-node"],
+          '-principal=' + settingsJson["principal"],
+          // TODO: Modularize
+          '-phoenixClient=' + homedir + "/.ctvisualizer/" + "drivers" + activeDriverManager.getActiveDriver(),
+          '-keytab=' + settingsJson["path-to-keytab"]
+        ]
+      );
 
-        shellScript.stdout.on('data', (data) => {
-          console.log(`stdout: ${data}`);
+      shellScript.stdout.on('data', (data) => {
+        console.log(`stdout: ${data}`);
+      });
+
+      shellScript.stderr.on('data', (data) => {
+        console.log(`stderr: ${data}`);
+      });
+
+      shellScript.on('close', (code) => {
+        console.log(`child process exited with code ${code}`);
+      });
+
+      // continiously try a health check until success or 10 seconds pass
+      var attempts = 0;
+      var requestLoop = setInterval(function () {
+        request({
+          url: "http://localhost:8080/health",
+          method: "GET",
+        }, function (error, response, body) {
+          if (attempts == 10) {
+            clearInterval(requestLoop);
+            connectionFailed();
+            $("#errorWarning").html(htmlComponents["connectionFailedWarning"]);
+          }
+          else if (!error && response.statusCode == 200) {
+            console.log('Connection successful!');
+            clearInterval(requestLoop);
+            connectionSuccess();
+          } else {
+            console.log('Connection attempt failed. Attempts (out of 10): ' + attempts);
+          }
+          attempts++;
         });
-
-        shellScript.stderr.on('data', (data) => {
-          console.log(`stderr: ${data}`);
-        });
-
-        shellScript.on('close', (code) => {
-          console.log(`child process exited with code ${code}`);
-        });
-
-        // continiously try a health check until success or 10 seconds pass
-        var attempts = 0;
-        var requestLoop = setInterval(function () {
-          request({
-            url: "http://localhost:8080/health",
-            method: "GET",
-          }, function (error, response, body) {
-            if (attempts == 10) {
-              clearInterval(requestLoop);
-              connectionFailed();
-              $("#errorWarning").html(htmlComponents["connectionFailedWarning"]);
-            }
-            else if (!error && response.statusCode == 200) {
-              console.log('Connection successful!');
-              clearInterval(requestLoop);
-              connectionSuccess();
-            } else {
-              console.log('Connection attempt failed. Attempts (out of 10): ' + attempts);
-            }
-            attempts++;
-          });
-        }, 1000);
-      }
-    });
+      }, 1000);
+    }
   });
 }
 
