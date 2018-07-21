@@ -3,7 +3,7 @@ const fs = require("fs");
 const appdataDirectory = require("./appdata-directory");
 const locations = require("./locations");
 
-const pathToDrivers = appdataDirectory.getDirectory() + locations.pathToDrivers;
+const pathToDrivers = appdataDirectory.getDirectory() + locations.pathToDriverDownloads;
 
 function createDriversDirectoryIfNotExists() {
     if(!fs.existsSync(pathToDrivers)) {

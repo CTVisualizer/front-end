@@ -313,11 +313,8 @@ function populateSettingsFields() {
 }
 
 function populateAvailableDrivers() {
-  var driverLocation = driversDirectory.getDirectory()
+  var driverLocation = driversDirectory.getDirectory();
   var arrayOfDrivers = [];
-  if (!fs.existsSync(driverLocation)) {
-    fs.mkdirSync(driverLocation);
-  }
   fs.readdirSync(driverLocation).forEach(file => {
     if (file.substr(file.length - 4) == ".jar")
       arrayOfDrivers.push({ "name": file, "value": file });
