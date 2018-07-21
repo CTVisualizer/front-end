@@ -1,6 +1,6 @@
 
 const fs = require("fs");
-const locations = require("./locations");
+const locations = require("./usersettings/locations");
 const appDataDirectory = (function () {return os.homedir() + locations["ctvisualizer"]})();
 
 

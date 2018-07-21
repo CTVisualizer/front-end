@@ -1,6 +1,6 @@
 
 const fs = require("fs");
-const appdataDirectory = require("./appdata-directory");
+const appdataDirectory = require("./usersettings/appdata-directory");
 const configDirectory = appdataDirectory.getDirectory() + "config/";
 
 module.exports.createIfNotExists = function () {
