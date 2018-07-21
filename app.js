@@ -22,7 +22,7 @@ app.once('ready', () => {
 
   window.once('ready-to-show', () => {
     window.show()
-    require("./menu/mainmenu")
+    require("./menu/mainmenu");
   });
 
   window.on('close', function () {

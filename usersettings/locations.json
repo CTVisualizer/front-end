@@ -1,0 +1,7 @@
+{
+    "ctvisualizer": "/.ctvisualizer/",
+    "pathToDriverDownloads" : "drivers/",
+    "pathToQueryHistoryFile": "queryHistory.json",
+    "pathToPhoenixSettingsFile": "config/phoenixSettings.json",
+    "pathToDriverSettingsFile": "config/driverSettings.json"
+}
