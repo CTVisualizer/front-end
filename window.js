@@ -326,6 +326,7 @@ function populateAvailableDrivers() {
 
 function updateActiveDriver() {
   var newActiveDriver = document.getElementsByClassName("item active selected")[0].innerHTML;
+  document.getElementById("activeDriverName").innerHTML = newActiveDriver;
   activeDriverManager.setActiveDriver(newActiveDriver);
 }
 
