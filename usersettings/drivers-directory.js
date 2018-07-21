@@ -3,22 +3,22 @@ const fs = require("fs");
 const appdataDirectory = require("./appdata-directory");
 const locations = require("./locations");
 
-const pathToDrivers = appdataDirectory.getDirectory() + locations.pathToDriverJars;
+const pathToDriverJars = appdataDirectory.getDirectory() + locations.pathToDriverJars;
 
 function createDriversDirectoryIfNotExists() {
-    if(!fs.existsSync(pathToDrivers)) {
+    if(!fs.existsSync(pathToDriverJars)) {
         createDriversDirectory();
     }
 }
 
 function createDriversDirectory() {
-    console.log("Creating drivers directory at " + pathToDrivers);
+    console.log("Creating drivers directory at " + pathToDriverJars);
     appdataDirectory.createIfNotExists();
-    fs.mkdirSync(pathToDrivers);
+    fs.mkdirSync(pathToDriverJars);
     console.log("drivers directory created.");
 }
 
 module.exports.getDirectory = function () {
     createDriversDirectoryIfNotExists();
-    return pathToDrivers;
+    return pathToDriverJars;
 }
