@@ -6,6 +6,7 @@ const fs = require("fs");
 const progress = require('request-progress');
 const homedir = require('os').homedir();
 const targz = require('targz');
+require('./menu/menuTemplate');
 
 //Local JSON
 var htmlComponents = require("./htmlComponents.json");
