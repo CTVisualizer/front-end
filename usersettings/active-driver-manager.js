@@ -2,7 +2,7 @@ const fs = require("fs");
 const locations = require("./locations");
 const configDirectory = require("./config-directory");
 const appdataDirectory = require("./appdata-directory");
-const pathToDriverSettingsFile = appdataDirectory.getDirectory() + locations["pathToDriverSettingsFile"];
+const pathToDriverSettingsFile = appdataDirectory.getDirectory() + locations.pathToDriverSettingsFile;
 
 
 function createSettingsFile() {

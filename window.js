@@ -9,10 +9,10 @@ const targz = require('targz');
 
 // Local Modules
 const activeDriverManager = require('./usersettings/active-driver-manager');
+const phoenixSettingsManager = require('./usersettings/phoenix-settings-manager');
 
 // Local JSON
 var htmlComponents = require("./htmlComponents.json");
-const pathToSettings = "./config/settings.json";
 var pathToQueryHistory = "./queryHistory.json";
 
 // Global Stated Data
@@ -42,62 +42,60 @@ function generateTable() {
     $("#errorWarning").html(htmlComponents["notConnectedError"]);
   } else {
     clearResults();
-    $.getJSON(pathToSettings, function (settingsJson) {
-      if (!validateSettingsExist(settingsJson)) {
-        $("#errorWarning").html(htmlComponents["incompleteSettingsWarning"]);
+    if (!validateSettingsExist(phoenixSettingsManager.getSettings())) {
+      $("#errorWarning").html(htmlComponents["incompleteSettingsWarning"]);
+    } else {
+      $("#errorWarning").html(htmlComponents["emptyErrorWarning"]);
+      var rawQuery = codeMirrorWindow.getValue();
+      var preparedQuery = prepareQuery(rawQuery);
+      if (!preparedQuery) {
+        $("#errorWarning").html(htmlComponents["missingQueryError"]);
       } else {
-        $("#errorWarning").html(htmlComponents["emptyErrorWarning"]);
-        var rawQuery = codeMirrorWindow.getValue();
-        var preparedQuery = prepareQuery(rawQuery);
-        if (!preparedQuery) {
-          $("#errorWarning").html(htmlComponents["missingQueryError"]);
-        } else {
-          hideNavbar();
-          $("#queryResponse").html("<h3>Executing query...</h3>");
-          document.getElementById('runIcon').outerHTML = "<i class='spinner loading icon' id='runIcon'></i>";
-          request('http://localhost:8080/execute/' + preparedQuery, function (error, response, body) {
-            updateQueryHistory(rawQuery);
-            resumeNavbar();
-            document.getElementById('runIcon').outerHTML = "<i class='play icon' id='runIcon'></i>";
-            if (error) {
-              $("#errorWarning").html(htmlComponents["databaseRequestError"]);
-              $("queryResponse").html("<table class='ui celled striped table'></table></div>");
+        hideNavbar();
+        $("#queryResponse").html("<h3>Executing query...</h3>");
+        document.getElementById('runIcon').outerHTML = "<i class='spinner loading icon' id='runIcon'></i>";
+        request('http://localhost:8080/execute/' + preparedQuery, function (error, response, body) {
+          updateQueryHistory(rawQuery);
+          resumeNavbar();
+          document.getElementById('runIcon').outerHTML = "<i class='play icon' id='runIcon'></i>";
+          if (error) {
+            $("#errorWarning").html(htmlComponents["databaseRequestError"]);
+            $("queryResponse").html("<table class='ui celled striped table'></table></div>");
+          } else {
+            console.log(body);
+            queryResults = JSON.parse(body);
+            var headers = buildHeaders(queryResults);
+            var data = queryResults['data'];
+            if (data.length > 100) {
+              var firstHundredData = data.slice(0, 101);
+              var dataForTable = firstHundredData;
             } else {
-              console.log(body);
-              queryResults = JSON.parse(body);
-              var headers = buildHeaders(queryResults);
-              var data = queryResults['data'];
-              if (data.length > 100) {
-                var firstHundredData = data.slice(0, 101);
-                var dataForTable = firstHundredData;
-              } else {
-                var dataForTable = data;
-              }
-              var tableHtml = (
-                (new Table({
-                  "class": "ui fixed single line celled table selectable compact",
-                  "id": "queryResponse",
-                  "style": "overflow-x:auto"
-                }))
-                  .setHeaders(headers)
-                  .setData(dataForTable)
-                  .render()
-              );
-              $("#queryResponse").html(tableHtml);
-              stylePrimaryKeys(queryResults);
-              document.getElementById("numberOfResults").innerHTML = data.length + " Results";
-              if (data.length == 1)
-                document.getElementById("numberOfResults").innerHTML = "1 Result";
-              if (data.length > 100) {
-                document.getElementById("expandTableOption").outerHTML = "<button class='ui button mini blue' id='expandTableOption' onclick='expandTableResults()'>Display all results</button>"
-                document.getElementById("numberOfResults").innerHTML = data.length + " Results (Showing 100)";
-              }
-              $('td').addClass(getColorForStatusCode(response.statusCode));
+              var dataForTable = data;
             }
-          });
-        }
+            var tableHtml = (
+              (new Table({
+                "class": "ui fixed single line celled table selectable compact",
+                "id": "queryResponse",
+                "style": "overflow-x:auto"
+              }))
+                .setHeaders(headers)
+                .setData(dataForTable)
+                .render()
+            );
+            $("#queryResponse").html(tableHtml);
+            stylePrimaryKeys(queryResults);
+            document.getElementById("numberOfResults").innerHTML = data.length + " Results";
+            if (data.length == 1)
+              document.getElementById("numberOfResults").innerHTML = "1 Result";
+            if (data.length > 100) {
+              document.getElementById("expandTableOption").outerHTML = "<button class='ui button mini blue' id='expandTableOption' onclick='expandTableResults()'>Display all results</button>"
+              document.getElementById("numberOfResults").innerHTML = data.length + " Results (Showing 100)";
+            }
+            $('td').addClass(getColorForStatusCode(response.statusCode));
+          }
+        });
       }
-    });
+    }
   }
 }
 
@@ -298,12 +296,11 @@ function updateSettings() {
 }
 
 function populateSettingsFields() {
-  $.getJSON(pathToSettings, function (settingsJson) {
-    for (var i = 0; i < Object.keys(settingsJson).length; i++) {
-      document.getElementById(Object.keys(settingsJson)[i]).value = settingsJson[Object.keys(settingsJson)[i]];
-    }
-    document.getElementById("driver-version").innerHTML = activeDriverManager.getActiveDriver();
-  });
+  const settingsJson = phoenixSettingsManager.getSettings();
+  for (var i = 0; i < Object.keys(settingsJson).length; i++) {
+    document.getElementById(Object.keys(settingsJson)[i]).value = settingsJson[Object.keys(settingsJson)[i]];
+  }
+  document.getElementById("driver-version").innerHTML = activeDriverManager.getActiveDriver();
 }
 
 function populateAvailableDrivers() {
@@ -469,59 +466,58 @@ function updateQueryHistory(newQuery) {
 function createConnection() {
   document.getElementById("connectButton").outerHTML = htmlComponents["connectingButton"];
   hideNavbar();
-  $.getJSON(pathToSettings, function (settingsJson) {
-    if (!validateSettingsExist(settingsJson)) {
-      connectionFailed();
-      $("#errorWarning").html(htmlComponents["incompleteSettingsWarning"]);
-    } else {
-      var shellScript = spawn('./node_modules/phoenix-java-adapter/bin/phoenix-adapter',
-        [
-          '-quorum=' + settingsJson["quorum"],
-          '-port=' + settingsJson["port"],
-          '-hbaseNode=' + settingsJson["hbase-node"],
-          '-principal=' + settingsJson["principal"],
-          // TODO: Modularize
-          '-phoenixClient=' + homedir + "/.ctvisualizer/" + "drivers" + activeDriverManager.getActiveDriver(),
-          '-keytab=' + settingsJson["path-to-keytab"]
-        ]
-      );
+  let settingsJson = phoenixSettingsManager.getSettings();
+  if (!validateSettingsExist(settingsJson)) {
+    connectionFailed();
+    $("#errorWarning").html(htmlComponents["incompleteSettingsWarning"]);
+  } else {
+    var shellScript = spawn('./node_modules/phoenix-java-adapter/bin/phoenix-adapter',
+      [
+        '-quorum=' + settingsJson["quorum"],
+        '-port=' + settingsJson["port"],
+        '-hbaseNode=' + settingsJson["hbaseNode"],
+        '-principal=' + settingsJson["principal"],
+        // TODO: Modularize
+        '-phoenixClient=' + homedir + "/.ctvisualizer/" + "drivers" + activeDriverManager.getActiveDriver(),
+        '-keytab=' + settingsJson["pathToKeytab"]
+      ]
+    );
 
-      shellScript.stdout.on('data', (data) => {
-        console.log(`stdout: ${data}`);
+    shellScript.stdout.on('data', (data) => {
+      console.log(`stdout: ${data}`);
+    });
+
+    shellScript.stderr.on('data', (data) => {
+      console.log(`stderr: ${data}`);
+    });
+
+    shellScript.on('close', (code) => {
+      console.log(`child process exited with code ${code}`);
+    });
+
+    // continiously try a health check until success or 10 seconds pass
+    var attempts = 0;
+    var requestLoop = setInterval(function () {
+      request({
+        url: "http://localhost:8080/health",
+        method: "GET",
+      }, function (error, response, body) {
+        if (attempts == 10) {
+          clearInterval(requestLoop);
+          connectionFailed();
+          $("#errorWarning").html(htmlComponents["connectionFailedWarning"]);
+        }
+        else if (!error && response.statusCode == 200) {
+          console.log('Connection successful!');
+          clearInterval(requestLoop);
+          connectionSuccess();
+        } else {
+          console.log('Connection attempt failed. Attempts (out of 10): ' + attempts);
+        }
+        attempts++;
       });
-
-      shellScript.stderr.on('data', (data) => {
-        console.log(`stderr: ${data}`);
-      });
-
-      shellScript.on('close', (code) => {
-        console.log(`child process exited with code ${code}`);
-      });
-
-      // continiously try a health check until success or 10 seconds pass
-      var attempts = 0;
-      var requestLoop = setInterval(function () {
-        request({
-          url: "http://localhost:8080/health",
-          method: "GET",
-        }, function (error, response, body) {
-          if (attempts == 10) {
-            clearInterval(requestLoop);
-            connectionFailed();
-            $("#errorWarning").html(htmlComponents["connectionFailedWarning"]);
-          }
-          else if (!error && response.statusCode == 200) {
-            console.log('Connection successful!');
-            clearInterval(requestLoop);
-            connectionSuccess();
-          } else {
-            console.log('Connection attempt failed. Attempts (out of 10): ' + attempts);
-          }
-          attempts++;
-        });
-      }, 1000);
-    }
-  });
+    }, 1000);
+  }
 }
 
 
