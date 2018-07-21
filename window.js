@@ -274,9 +274,9 @@ function updateSettings() {
   var newSettingsData = {
     "quorum": "",
     "port": "",
-    "hbase-node": "",
+    "hbaseNode": "",
     "principal": "",
-    "path-to-keytab": ""
+    "pathToKeytab": ""
   };
   var emptyFieldsExist = false;
   for (var i = 0; i < Object.keys(newSettingsData).length; i++) {
@@ -285,14 +285,20 @@ function updateSettings() {
     if (enteredField == "")
       emptyFieldsExist = true;
   }
-  fs.writeFile(pathToSettings, JSON.stringify(newSettingsData), function (err) {
-    if (err)
-      $("#errorWarning").html(htmlComponents["updateSettingsError"]);
-    else if (emptyFieldsExist)
-      $("#errorWarning").html(htmlComponents["updateSettingsEmptyWarning"]);
-    else
-      $("#errorWarning").html(htmlComponents["updateSettingsSuccess"]);
-  });
+  phoenixSettingsManager.saveSettings(newSettingsData);
+  if (emptyFieldsExist)
+    $("#errorWarning").html(htmlComponents["updateSettingsEmptyWarning"]);
+  else
+    $("#errorWarning").html(htmlComponents["updateSettingsSuccess"]);
+
+  // fs.writeFile(pathToSettings, JSON.stringify(newSettingsData), function (err) {
+  //   if (err)
+  //     $("#errorWarning").html(htmlComponents["updateSettingsError"]);
+  //   else if (emptyFieldsExist)
+  //     $("#errorWarning").html(htmlComponents["updateSettingsEmptyWarning"]);
+  //   else
+  //     $("#errorWarning").html(htmlComponents["updateSettingsSuccess"]);
+  // });
 }
 
 function populateSettingsFields() {
