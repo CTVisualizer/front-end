@@ -22,6 +22,7 @@ app.once('ready', () => {
 
   window.once('ready-to-show', () => {
     window.show()
+    require("./menu/mainmenu")
   });
 
   window.on('close', function () {
