@@ -1,5 +1,5 @@
 const fs = require("fs");
-const locations = require("./usersettings/locations");
+const locations = require("./locations");
 const configDirectory = require("./usersettings/config-directory");
 const appdataDirectory = require("./usersettings/appdata-directory");
 const pathToDriverSettingsFile = appdataDirectory.getDirectory() + locations["pathToDriverSettingsFile"];
