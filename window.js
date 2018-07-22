@@ -6,6 +6,7 @@ const fs = require("fs");
 const progress = require('request-progress');
 const homedir = require('os').homedir();
 const targz = require('targz');
+const path = require('path');
 
 // Local Modules
 const activeDriverManager = require('./usersettings/active-driver-manager');
@@ -453,7 +454,7 @@ function createConnection() {
     connectionFailed();
     $("#errorWarning").html(htmlComponents["incompleteSettingsWarning"]);
   } else {
-    var shellScript = spawn('./node_modules/phoenix-java-adapter/bin/phoenix-adapter',
+    var shellScript = spawn(path.join(__dirname, 'node_modules', 'phoenix-java-adapter', 'bin', 'phoenix-adapter'),
       [
         '-quorum=' + settingsJson["quorum"],
         '-port=' + settingsJson["port"],
