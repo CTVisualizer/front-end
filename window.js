@@ -10,13 +10,13 @@ const targz = require('targz');
 // Local Modules
 const activeDriverManager = require('./usersettings/active-driver-manager');
 const phoenixSettingsManager = require('./usersettings/phoenix-settings-manager');
+const queryHistoryManager = require('./usersettings/query-history-manager');
 
 const driversDirectory = require('./usersettings/drivers-directory');
 const downloadsDirectory = require('./usersettings/downloads-directory');
 
 // Local JSON
 var htmlComponents = require("./htmlComponents.json");
-var pathToQueryHistory = "./queryHistory.json";
 
 // Global Stated Data
 var currentComponent = 1; // current component which is being viewed (1=DB visualizer, 2=help, 3=drivermanager, 4=help)
@@ -30,12 +30,11 @@ var queryResults;
 var currentQueryIndex = 0;
 
 $(document).ready(function () { // on document ready, populate query window with most recent query
-  $.getJSON(pathToQueryHistory, function (queryHistoryJson) {
-    if (currentQueryIndex != 19 && queryHistoryJson[0] != undefined) {
-      codeMirrorWindow.setValue(queryHistoryJson[0]);
-      currentQueryIndex = 0;
-    }
-  });
+  let queryHistoryJson = queryHistoryManager.getHistory()
+  if (currentQueryIndex != queryHistoryManager.getMaxHistoryLength() - 1 && queryHistoryJson[0] != undefined) {
+    codeMirrorWindow.setValue(queryHistoryJson[0]);
+    currentQueryIndex = 0;
+  }
   colorHistoryArrows();
 });
 
@@ -225,43 +224,39 @@ function resumeNavbar() {
 }
 
 function backwardQuery() {
-  $.getJSON(pathToQueryHistory, function (queryHistoryJson) {
-    if (currentQueryIndex != 19 && queryHistoryJson[currentQueryIndex + 1] != undefined) {
-      currentQueryIndex++;
-      var currentQueryText = queryHistoryJson[currentQueryIndex];
-      codeMirrorWindow.setValue(currentQueryText);
-      colorHistoryArrows();
-    }
-  });
+  let queryHistoryJson = queryHistoryManager.getHistory();
+  if (currentQueryIndex != queryHistoryManager.getMaxHistoryLength() && queryHistoryJson[currentQueryIndex + 1] != undefined) {
+    currentQueryIndex++;
+    var currentQueryText = queryHistoryJson[currentQueryIndex];
+    codeMirrorWindow.setValue(currentQueryText);
+    colorHistoryArrows();
+  }
 }
 
 function forwardQuery() {
-  $.getJSON(pathToQueryHistory, function (queryHistoryJson) {
-    if (currentQueryIndex != 0 && queryHistoryJson[currentQueryIndex - 1] != undefined) {
-      currentQueryIndex--;
-      var currentQueryText = queryHistoryJson[currentQueryIndex];
-      codeMirrorWindow.setValue(currentQueryText);
-      colorHistoryArrows();
-    }
-  });
+  let queryHistoryJson = queryHistoryManager.getHistory();
+  if (currentQueryIndex != 0 && queryHistoryJson[currentQueryIndex - 1] != undefined) {
+    currentQueryIndex--;
+    var currentQueryText = queryHistoryJson[currentQueryIndex];
+    codeMirrorWindow.setValue(currentQueryText);
+    colorHistoryArrows();
+  }
 }
 
 function colorHistoryArrows() {
-  $.getJSON(pathToQueryHistory, function (queryHistoryJson) {
-    if (currentQueryIndex == 0 || queryHistoryJson[currentQueryIndex - 1] == undefined) {
-      $('#forwardArrow').removeClass('primary');
-    }
-    else {
-      $('#forwardArrow').addClass('primary');
-    }
-    if (currentQueryIndex == 19 || queryHistoryJson[currentQueryIndex + 1] == undefined) {
-      $('#backArrow').removeClass('primary');
-    }
-    else {
-      $('#backArrow').addClass('primary');
-    }
+  let queryHistoryJson = queryHistoryManager.getHistory();
+  if (currentQueryIndex == 0 || queryHistoryJson[currentQueryIndex - 1] == undefined) {
+    $('#forwardArrow').removeClass('primary');
   }
-  );
+  else {
+    $('#forwardArrow').addClass('primary');
+  }
+  if (currentQueryIndex == queryHistoryManager.getMaxHistoryLength() || queryHistoryJson[currentQueryIndex + 1] == undefined) {
+    $('#backArrow').removeClass('primary');
+  }
+  else {
+    $('#backArrow').addClass('primary');
+  }
 }
 
 function manageDrivers() {
@@ -453,18 +448,7 @@ function downloadEnded() { // any time a download ends
 }
 
 function updateQueryHistory(newQuery) {
-  $.getJSON(pathToQueryHistory, function (queryHistoryJson) {
-    var newJson = queryHistoryJson;
-    for (var i = 19; i > 0; i--) {
-      if (newJson[i - 1] != undefined)
-        newJson[i] = newJson[i - 1];
-    }
-    newJson[0] = newQuery;
-    fs.writeFile(pathToQueryHistory, JSON.stringify(newJson), 'utf8', function (err) {
-      if (err)
-        console.log("Error writing query history");
-    });
-  });
+  queryHistoryManager.pushQuery(newQuery);
   currentQueryIndex = 0;
   colorHistoryArrows();
 }
