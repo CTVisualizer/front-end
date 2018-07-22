@@ -288,15 +288,6 @@ function updateSettings() {
     $("#errorWarning").html(htmlComponents["updateSettingsEmptyWarning"]);
   else
     $("#errorWarning").html(htmlComponents["updateSettingsSuccess"]);
-
-  // fs.writeFile(pathToSettings, JSON.stringify(newSettingsData), function (err) {
-  //   if (err)
-  //     $("#errorWarning").html(htmlComponents["updateSettingsError"]);
-  //   else if (emptyFieldsExist)
-  //     $("#errorWarning").html(htmlComponents["updateSettingsEmptyWarning"]);
-  //   else
-  //     $("#errorWarning").html(htmlComponents["updateSettingsSuccess"]);
-  // });
 }
 
 function populateSettingsFields() {
