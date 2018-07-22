@@ -2,6 +2,7 @@ const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const url = require('url');
 const request = require('request');
+const path = require('path');
 
 let window = null;
 
@@ -11,7 +12,8 @@ app.once('ready', () => {
     width: 1600,
     height: 1200,
     show: false,
-    resizable: true
+    resizable: true,
+    icon: path.join(__dirname, 'res/logo4.png')
   });
 
   window.loadURL(url.format({
