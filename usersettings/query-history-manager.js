@@ -31,6 +31,12 @@ function writeQueryHistory(newQueryHistory) {
     }
 }
 
+function getHistory () {
+    createQueryHistoryFileIfNotExists();
+    return JSON.parse(fs.readFileSync(pathToQueryHistoryFile));
+}
+
+module.exports.getHistory = getHistory;
 
 module.exports.pushQuery = function (query) {
     createQueryHistoryFileIfNotExists();
@@ -40,11 +46,6 @@ module.exports.pushQuery = function (query) {
         history.slice(0, maxHistoryLength);
     }
     writeQueryHistory(history);
-}
-
-module.exports.getHistory = function () {
-    createQueryHistoryFileIfNotExists();
-    return JSON.parse(fs.readFileSync(pathToQueryHistoryFile));
 }
 
 module.exports.getMaxHistoryLength = function () {return maxHistoryLength};
