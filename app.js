@@ -2,7 +2,6 @@ const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const url = require('url');
 const request = require('request');
-const path = require('path');
 
 let window = null;
 
