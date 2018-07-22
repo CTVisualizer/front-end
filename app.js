@@ -38,6 +38,7 @@ app.once('ready', () => {
     } catch(err) {
       console.log(err);
     }
+    app.quit();
     
   });
 
