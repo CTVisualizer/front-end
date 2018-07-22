@@ -2,10 +2,15 @@ const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const url = require('url');
 const request = require('request');
+const process = require('process');
 
 let window = null;
 
 app.once('ready', () => {
+
+  process.on('uncaughtException', (error) => {
+    console.log(error);
+  });
 
   window = new BrowserWindow({
     width: 1600,
@@ -42,5 +47,4 @@ app.once('ready', () => {
       console.log(err);
     }
   });
-
 });
