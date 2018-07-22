@@ -225,7 +225,7 @@ function resumeNavbar() {
 
 function backwardQuery() {
   let queryHistoryJson = queryHistoryManager.getHistory();
-  if (currentQueryIndex != queryHistoryManager.getMaxHistoryLength() && queryHistoryJson[currentQueryIndex - 1] != undefined) {
+  if (currentQueryIndex != 0 && queryHistoryJson[currentQueryIndex - 1] != undefined) {
     currentQueryIndex--;
     var currentQueryText = queryHistoryJson[currentQueryIndex];
     codeMirrorWindow.setValue(currentQueryText);
@@ -235,7 +235,7 @@ function backwardQuery() {
 
 function forwardQuery() {
   let queryHistoryJson = queryHistoryManager.getHistory();
-  if (currentQueryIndex != 0 && queryHistoryJson[currentQueryIndex + 1] != undefined) {
+  if (currentQueryIndex != queryHistoryManager.getMaxHistoryLength() - 1 && queryHistoryJson[currentQueryIndex + 1] != undefined) {
     currentQueryIndex++;
     var currentQueryText = queryHistoryJson[currentQueryIndex];
     codeMirrorWindow.setValue(currentQueryText);
