@@ -26,11 +26,20 @@ app.once('ready', () => {
   });
 
   window.on('close', function () {
-    request.delete("http://localhost:8080/kill");
+    try {
+      request.delete("http://localhost:8080/kill");
+    } catch(err) {
+      console.log(err);
+    }
+    
   });
 
   window.on('reload', function () {
-    request.delete("http://localhost:8080/kill");
+    try {
+      request.delete("http://localhost:8080/kill");
+    } catch(err) {
+      console.log(err);
+    }
   });
 
 });
