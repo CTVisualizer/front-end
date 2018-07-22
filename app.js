@@ -10,6 +10,7 @@ app.once('ready', () => {
 
   process.on('uncaughtException', (error) => {
     console.log(error);
+    app.quit();
   });
 
   window = new BrowserWindow({
