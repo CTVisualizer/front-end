@@ -1,4 +1,4 @@
-//Node Modules
+// Node Modules
 const Table = require("table-builder");
 const request = require("request");
 const { spawn } = require('child_process');
@@ -7,13 +7,18 @@ const progress = require('request-progress');
 const homedir = require('os').homedir();
 const targz = require('targz');
 
-//Local JSON
-var htmlComponents = require("./htmlComponents.json");
-const pathToSettings = "./config/settings.json";
-const pathToDriverSettings = "./config/driversettings.json";
-var pathToQueryHistory = "./queryHistory.json";
+// Local Modules
+const activeDriverManager = require('./usersettings/active-driver-manager');
+const phoenixSettingsManager = require('./usersettings/phoenix-settings-manager');
+const queryHistoryManager = require('./usersettings/query-history-manager');
 
-//Global Stated Data
+const driversDirectory = require('./usersettings/drivers-directory');
+const downloadsDirectory = require('./usersettings/downloads-directory');
+
+// Local JSON
+var htmlComponents = require("./htmlComponents.json");
+
+// Global Stated Data
 var currentComponent = 1; // current component which is being viewed (1=DB visualizer, 2=help, 3=drivermanager, 4=help)
 var sqlVisualizerComponent; // current HTML state of the Sql Visualizer component
 var currentlyDownloading = false; // is a driver being downloaded
@@ -25,12 +30,11 @@ var queryResults;
 var currentQueryIndex = 0;
 
 $(document).ready(function () { // on document ready, populate query window with most recent query
-  $.getJSON(pathToQueryHistory, function (queryHistoryJson) {
-    if (currentQueryIndex != 19 && queryHistoryJson[0] != undefined) {
-      codeMirrorWindow.setValue(queryHistoryJson[0]);
-      currentQueryIndex = 0;
-    }
-  });
+  let queryHistoryJson = queryHistoryManager.getHistory()
+  if (currentQueryIndex != queryHistoryManager.getMaxHistoryLength() - 1 && queryHistoryJson[0] != undefined) {
+    codeMirrorWindow.setValue(queryHistoryJson[0]);
+    currentQueryIndex = 0;
+  }
   colorHistoryArrows();
 });
 
@@ -40,62 +44,60 @@ function generateTable() {
     $("#errorWarning").html(htmlComponents["notConnectedError"]);
   } else {
     clearResults();
-    $.getJSON(pathToSettings, function (settingsJson) {
-      if (!validateSettingsExist(settingsJson)) {
-        $("#errorWarning").html(htmlComponents["incompleteSettingsWarning"]);
+    if (!validateSettingsExist(phoenixSettingsManager.getSettings())) {
+      $("#errorWarning").html(htmlComponents["incompleteSettingsWarning"]);
+    } else {
+      $("#errorWarning").html(htmlComponents["emptyErrorWarning"]);
+      var rawQuery = codeMirrorWindow.getValue();
+      var preparedQuery = prepareQuery(rawQuery);
+      if (!preparedQuery) {
+        $("#errorWarning").html(htmlComponents["missingQueryError"]);
       } else {
-        $("#errorWarning").html(htmlComponents["emptyErrorWarning"]);
-        var rawQuery = codeMirrorWindow.getValue();
-        var preparedQuery = prepareQuery(rawQuery);
-        if (!preparedQuery) {
-          $("#errorWarning").html(htmlComponents["missingQueryError"]);
-        } else {
-          hideNavbar();
-          $("#queryResponse").html("<h3>Executing query...</h3>");
-          document.getElementById('runIcon').outerHTML = "<i class='spinner loading icon' id='runIcon'></i>";
-          request('http://localhost:8080/execute/' + preparedQuery, function (error, response, body) {
-            updateQueryHistory(rawQuery);
-            resumeNavbar();
-            document.getElementById('runIcon').outerHTML = "<i class='play icon' id='runIcon'></i>";
-            if (error) {
-              $("#errorWarning").html(htmlComponents["databaseRequestError"]);
-              $("queryResponse").html("<table class='ui celled striped table'></table></div>");
+        hideNavbar();
+        $("#queryResponse").html("<h3>Executing query...</h3>");
+        document.getElementById('runIcon').outerHTML = "<i class='spinner loading icon' id='runIcon'></i>";
+        request('http://localhost:8080/execute/' + preparedQuery, function (error, response, body) {
+          updateQueryHistory(rawQuery);
+          resumeNavbar();
+          document.getElementById('runIcon').outerHTML = "<i class='play icon' id='runIcon'></i>";
+          if (error) {
+            $("#errorWarning").html(htmlComponents["databaseRequestError"]);
+            $("queryResponse").html("<table class='ui celled striped table'></table></div>");
+          } else {
+            console.log(body);
+            queryResults = JSON.parse(body);
+            var headers = buildHeaders(queryResults);
+            var data = queryResults['data'];
+            if (data.length > 100) {
+              var firstHundredData = data.slice(0, 101);
+              var dataForTable = firstHundredData;
             } else {
-              console.log(body);
-              queryResults = JSON.parse(body);
-              var headers = buildHeaders(queryResults);
-              var data = queryResults['data'];
-              if (data.length > 100) {
-                var firstHundredData = data.slice(0, 101);
-                var dataForTable = firstHundredData;
-              } else {
-                var dataForTable = data;
-              }
-              var tableHtml = (
-                (new Table({
-                  "class": "ui fixed single line celled table selectable compact",
-                  "id": "queryResponse",
-                  "style": "overflow-x:auto"
-                }))
-                  .setHeaders(headers)
-                  .setData(dataForTable)
-                  .render()
-              );
-              $("#queryResponse").html(tableHtml);
-              stylePrimaryKeys(queryResults);
-              document.getElementById("numberOfResults").innerHTML = data.length + " Results";
-              if (data.length == 1)
-                document.getElementById("numberOfResults").innerHTML = "1 Result";
-              if (data.length > 100) {
-                document.getElementById("expandTableOption").outerHTML = "<button class='ui button mini blue' id='expandTableOption' onclick='expandTableResults()'>Display all results</button>"
-                document.getElementById("numberOfResults").innerHTML = data.length + " Results (Showing 100)";
-              }
-              $('td').addClass(getColorForStatusCode(response.statusCode));
+              var dataForTable = data;
             }
-          });
-        }
+            var tableHtml = (
+              (new Table({
+                "class": "ui fixed single line celled table selectable compact",
+                "id": "queryResponse",
+                "style": "overflow-x:auto"
+              }))
+                .setHeaders(headers)
+                .setData(dataForTable)
+                .render()
+            );
+            $("#queryResponse").html(tableHtml);
+            stylePrimaryKeys(queryResults);
+            document.getElementById("numberOfResults").innerHTML = data.length + " Results";
+            if (data.length == 1)
+              document.getElementById("numberOfResults").innerHTML = "1 Result";
+            if (data.length > 100) {
+              document.getElementById("expandTableOption").outerHTML = "<button class='ui button mini blue' id='expandTableOption' onclick='expandTableResults()'>Display all results</button>"
+              document.getElementById("numberOfResults").innerHTML = data.length + " Results (Showing 100)";
+            }
+            $('td').addClass(getColorForStatusCode(response.statusCode));
+          }
+        });
       }
-    });
+    }
   }
 }
 
@@ -222,52 +224,46 @@ function resumeNavbar() {
 }
 
 function backwardQuery() {
-  $.getJSON(pathToQueryHistory, function (queryHistoryJson) {
-    if (currentQueryIndex != 19 && queryHistoryJson[currentQueryIndex + 1] != undefined) {
-      currentQueryIndex++;
-      var currentQueryText = queryHistoryJson[currentQueryIndex];
-      codeMirrorWindow.setValue(currentQueryText);
-      colorHistoryArrows();
-    }
-  });
+  let queryHistoryJson = queryHistoryManager.getHistory();
+  if (currentQueryIndex != 0 && queryHistoryJson[currentQueryIndex - 1] != undefined) {
+    currentQueryIndex--;
+    var currentQueryText = queryHistoryJson[currentQueryIndex];
+    codeMirrorWindow.setValue(currentQueryText);
+    colorHistoryArrows();
+  }
 }
 
 function forwardQuery() {
-  $.getJSON(pathToQueryHistory, function (queryHistoryJson) {
-    if (currentQueryIndex != 0 && queryHistoryJson[currentQueryIndex - 1] != undefined) {
-      currentQueryIndex--;
-      var currentQueryText = queryHistoryJson[currentQueryIndex];
-      codeMirrorWindow.setValue(currentQueryText);
-      colorHistoryArrows();
-    }
-  });
+  let queryHistoryJson = queryHistoryManager.getHistory();
+  if (currentQueryIndex != queryHistoryManager.getMaxHistoryLength() - 1 && queryHistoryJson[currentQueryIndex + 1] != undefined) {
+    currentQueryIndex++;
+    var currentQueryText = queryHistoryJson[currentQueryIndex];
+    codeMirrorWindow.setValue(currentQueryText);
+    colorHistoryArrows();
+  }
 }
 
 function colorHistoryArrows() {
-  $.getJSON(pathToQueryHistory, function (queryHistoryJson) {
-    if (currentQueryIndex == 0 || queryHistoryJson[currentQueryIndex - 1] == undefined) {
-      $('#forwardArrow').removeClass('primary');
-    }
-    else {
-      $('#forwardArrow').addClass('primary');
-    }
-    if (currentQueryIndex == 19 || queryHistoryJson[currentQueryIndex + 1] == undefined) {
-      $('#backArrow').removeClass('primary');
-    }
-    else {
-      $('#backArrow').addClass('primary');
-    }
+  let queryHistoryJson = queryHistoryManager.getHistory();
+  if (currentQueryIndex == queryHistoryManager.getMaxHistoryLength() - 1 || queryHistoryJson[currentQueryIndex + 1] == undefined) {
+    $('#forwardArrow').removeClass('primary');
   }
-  );
+  else {
+    $('#forwardArrow').addClass('primary');
+  }
+  if (currentQueryIndex == 0 || queryHistoryJson[currentQueryIndex - 1] == undefined) {
+    $('#backArrow').removeClass('primary');
+  }
+  else {
+    $('#backArrow').addClass('primary');
+  }
 }
 
 function manageDrivers() {
   updateSettings();
   switchComponent(3);
   populateAvailableDrivers();
-  $.getJSON(pathToDriverSettings, function (driverSettingsJson) {
-    document.getElementById("activeDriverName").innerHTML = driverSettingsJson["activeDriver"];
-  });
+  document.getElementById("activeDriverName").innerHTML = activeDriverManager.getActiveDriver()
   $('.ui.dropdown').dropdown();
 }
 
@@ -276,9 +272,9 @@ function updateSettings() {
   var newSettingsData = {
     "quorum": "",
     "port": "",
-    "hbase-node": "",
+    "hbaseNode": "",
     "principal": "",
-    "path-to-keytab": ""
+    "pathToKeytab": ""
   };
   var emptyFieldsExist = false;
   for (var i = 0; i < Object.keys(newSettingsData).length; i++) {
@@ -287,33 +283,24 @@ function updateSettings() {
     if (enteredField == "")
       emptyFieldsExist = true;
   }
-  fs.writeFile(pathToSettings, JSON.stringify(newSettingsData), function (err) {
-    if (err)
-      $("#errorWarning").html(htmlComponents["updateSettingsError"]);
-    else if (emptyFieldsExist)
-      $("#errorWarning").html(htmlComponents["updateSettingsEmptyWarning"]);
-    else
-      $("#errorWarning").html(htmlComponents["updateSettingsSuccess"]);
-  });
+  phoenixSettingsManager.saveSettings(newSettingsData);
+  if (emptyFieldsExist)
+    $("#errorWarning").html(htmlComponents["updateSettingsEmptyWarning"]);
+  else
+    $("#errorWarning").html(htmlComponents["updateSettingsSuccess"]);
 }
 
 function populateSettingsFields() {
-  $.getJSON(pathToSettings, function (settingsJson) {
-    for (var i = 0; i < Object.keys(settingsJson).length; i++) {
-      document.getElementById(Object.keys(settingsJson)[i]).value = settingsJson[Object.keys(settingsJson)[i]];
-    }
-    $.getJSON(pathToDriverSettings, function (driverSettingsJson) {
-      document.getElementById("driver-version").innerHTML = driverSettingsJson["activeDriver"];
-    });
-  });
+  const settingsJson = phoenixSettingsManager.getSettings();
+  for (var i = 0; i < Object.keys(settingsJson).length; i++) {
+    document.getElementById(Object.keys(settingsJson)[i]).value = settingsJson[Object.keys(settingsJson)[i]];
+  }
+  document.getElementById("driver-version").innerHTML = activeDriverManager.getActiveDriver();
 }
 
 function populateAvailableDrivers() {
-  var driverLocation = homedir + "/.ctvisualizer/";
+  var driverLocation = driversDirectory.getDirectory();
   var arrayOfDrivers = [];
-  if (!fs.existsSync(driverLocation)) {
-    fs.mkdirSync(driverLocation);
-  }
   fs.readdirSync(driverLocation).forEach(file => {
     if (file.substr(file.length - 4) == ".jar")
       arrayOfDrivers.push({ "name": file, "value": file });
@@ -324,19 +311,9 @@ function populateAvailableDrivers() {
 }
 
 function updateActiveDriver() {
-  $.getJSON(pathToDriverSettings, function (driverSettingsJson) {
-    var newActiveDriver = document.getElementsByClassName("item active selected")[0].innerHTML;
-    var newDriverData = '{ "activeDriver" : "' + newActiveDriver + '"}';
-    var newDriverJson = JSON.parse(JSON.stringify(newDriverData));
-    fs.writeFile(pathToDriverSettings, newDriverJson, function (err) {
-      if (err)
-        console.log(err);
-      else {
-        document.getElementById("activeDriverName").innerHTML = newActiveDriver;
-        $("#driverErrorWarning").html(htmlComponents["activeDriverUpdatedComponet"]);
-      }
-    });
-  });
+  var newActiveDriver = document.getElementsByClassName("item active selected")[0].innerHTML;
+  document.getElementById("activeDriverName").innerHTML = newActiveDriver;
+  activeDriverManager.setActiveDriver(newActiveDriver);
 }
 
 function downloadDriver() { // process for downloading a new driver
@@ -347,7 +324,7 @@ function downloadDriver() { // process for downloading a new driver
       document.getElementById("downloadProgress").outerHTML = htmlComponents["invalidDriverErrorMessage"];
       currentlyDownloading = false;
     } else {
-      var writePath = homedir + "/.ctvisualizer/" + fileToDownload;
+      var writePath = downloadsDirectory.getDirectory() + fileToDownload;
       var downloadPath = getPhoenixDownloadPath(fileToDownload);
       var currentDownloadPercent = 0;
       var ouputFile = fs.createWriteStream(writePath);
@@ -408,15 +385,15 @@ function downloadDriver() { // process for downloading a new driver
 function extractJar(fileToExtract) {
   var outputDirectoryName = fileToExtract.replace(".tar.gz", "");
   targz.decompress({
-    src: homedir + "/.ctvisualizer/" + fileToExtract,
-    dest: homedir + "/.ctvisualizer/" + outputDirectoryName,
+    src: downloadsDirectory.getDirectory() + fileToExtract,
+    dest: downloadsDirectory.getDirectory() +  outputDirectoryName,
   }, function (err) {
     if (err) {
       console.log("Error extracting jar");
       downloadEnded();
     } else {
       document.getElementById("downloadProgress").outerHTML = "<h3 id='downloadProgress'>Locating extracted jar...</h3>";
-      copyJarFile(homedir + "/.ctvisualizer/" + outputDirectoryName + "/" + outputDirectoryName + "/" + outputDirectoryName.replace("bin", "client.jar").replace("apache-", ""), homedir + "/.ctvisualizer/" + outputDirectoryName.replace("bin", "client.jar").replace("apache-", ""));
+      copyJarFile(downloadsDirectory.getDirectory() + outputDirectoryName + "/" + outputDirectoryName + "/" + outputDirectoryName.replace("bin", "client.jar").replace("apache-", ""), driversDirectory.getDirectory() + outputDirectoryName.replace("bin", "client.jar").replace("apache-", ""));
     }
   });
 }
@@ -462,18 +439,7 @@ function downloadEnded() { // any time a download ends
 }
 
 function updateQueryHistory(newQuery) {
-  $.getJSON(pathToQueryHistory, function (queryHistoryJson) {
-    var newJson = queryHistoryJson;
-    for (var i = 19; i > 0; i--) {
-      if (newJson[i - 1] != undefined)
-        newJson[i] = newJson[i - 1];
-    }
-    newJson[0] = newQuery;
-    fs.writeFile(pathToQueryHistory, JSON.stringify(newJson), 'utf8', function (err) {
-      if (err)
-        console.log("Error writing query history");
-    });
-  });
+  queryHistoryManager.pushQuery(newQuery);
   currentQueryIndex = 0;
   colorHistoryArrows();
 }
@@ -482,60 +448,58 @@ function updateQueryHistory(newQuery) {
 function createConnection() {
   document.getElementById("connectButton").outerHTML = htmlComponents["connectingButton"];
   hideNavbar();
-  $.getJSON(pathToSettings, function (settingsJson) {
-    $.getJSON(pathToDriverSettings, function (driverSettingsJson) {
-      if (!validateSettingsExist(settingsJson)) {
-        connectionFailed();
-        $("#errorWarning").html(htmlComponents["incompleteSettingsWarning"]);
-      } else {
-        var shellScript = spawn('./node_modules/phoenix-java-adapter/bin/phoenix-adapter',
-          [
-            '-quorum=' + settingsJson["quorum"],
-            '-port=' + settingsJson["port"],
-            '-hbaseNode=' + settingsJson["hbase-node"],
-            '-principal=' + settingsJson["principal"],
-            '-phoenixClient=' + homedir + "/.ctvisualizer/" + driverSettingsJson["activeDriver"],
-            '-keytab=' + settingsJson["path-to-keytab"]
-          ]
-        );
+  let settingsJson = phoenixSettingsManager.getSettings();
+  if (!validateSettingsExist(settingsJson)) {
+    connectionFailed();
+    $("#errorWarning").html(htmlComponents["incompleteSettingsWarning"]);
+  } else {
+    var shellScript = spawn('./node_modules/phoenix-java-adapter/bin/phoenix-adapter',
+      [
+        '-quorum=' + settingsJson["quorum"],
+        '-port=' + settingsJson["port"],
+        '-hbaseNode=' + settingsJson["hbaseNode"],
+        '-principal=' + settingsJson["principal"],
+        // TODO: Modularize
+        '-phoenixClient=' + driversDirectory.getDirectory() + activeDriverManager.getActiveDriver(),
+        '-keytab=' + settingsJson["pathToKeytab"]
+      ]
+    );
 
-        shellScript.stdout.on('data', (data) => {
-          console.log(`stdout: ${data}`);
-        });
-
-        shellScript.stderr.on('data', (data) => {
-          console.log(`stderr: ${data}`);
-        });
-
-        shellScript.on('close', (code) => {
-          console.log(`child process exited with code ${code}`);
-        });
-
-        // continiously try a health check until success or 10 seconds pass
-        var attempts = 0;
-        var requestLoop = setInterval(function () {
-          request({
-            url: "http://localhost:8080/health",
-            method: "GET",
-          }, function (error, response, body) {
-            if (attempts == 10) {
-              clearInterval(requestLoop);
-              connectionFailed();
-              $("#errorWarning").html(htmlComponents["connectionFailedWarning"]);
-            }
-            else if (!error && response.statusCode == 200) {
-              console.log('Connection successful!');
-              clearInterval(requestLoop);
-              connectionSuccess();
-            } else {
-              console.log('Connection attempt failed. Attempts (out of 10): ' + attempts);
-            }
-            attempts++;
-          });
-        }, 1000);
-      }
+    shellScript.stdout.on('data', (data) => {
+      console.log(`stdout: ${data}`);
     });
-  });
+
+    shellScript.stderr.on('data', (data) => {
+      console.log(`stderr: ${data}`);
+    });
+
+    shellScript.on('close', (code) => {
+      console.log(`child process exited with code ${code}`);
+    });
+
+    // continiously try a health check until success or 10 seconds pass
+    var attempts = 0;
+    var requestLoop = setInterval(function () {
+      request({
+        url: "http://localhost:8080/health",
+        method: "GET",
+      }, function (error, response, body) {
+        if (attempts == 10) {
+          clearInterval(requestLoop);
+          connectionFailed();
+          $("#errorWarning").html(htmlComponents["connectionFailedWarning"]);
+        }
+        else if (!error && response.statusCode == 200) {
+          console.log('Connection successful!');
+          clearInterval(requestLoop);
+          connectionSuccess();
+        } else {
+          console.log('Connection attempt failed. Attempts (out of 10): ' + attempts);
+        }
+        attempts++;
+      });
+    }, 1000);
+  }
 }
 
 
