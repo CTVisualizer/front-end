@@ -224,7 +224,7 @@ function resumeNavbar() {
   document.getElementById("navbar").outerHTML = htmlComponents["navbarComponent"];
 }
 
-function backwardQuery() {
+function forwardQuery() {
   let queryHistoryJson = queryHistoryManager.getHistory();
   if (currentQueryIndex != 0 && queryHistoryJson[currentQueryIndex - 1] != undefined) {
     currentQueryIndex--;
@@ -234,7 +234,7 @@ function backwardQuery() {
   }
 }
 
-function forwardQuery() {
+function backwardQuery() {
   let queryHistoryJson = queryHistoryManager.getHistory();
   if (currentQueryIndex != queryHistoryManager.getMaxHistoryLength() - 1 && queryHistoryJson[currentQueryIndex + 1] != undefined) {
     currentQueryIndex++;
@@ -245,17 +245,17 @@ function forwardQuery() {
 }
 
 function colorHistoryArrows() {
+  $('#forwardArrow').removeClass('primary');
+  $('#backArrow').removeClass('primary');
   let queryHistoryJson = queryHistoryManager.getHistory();
-  if (currentQueryIndex == queryHistoryManager.getMaxHistoryLength() - 1 || queryHistoryJson[currentQueryIndex + 1] == undefined) {
-    $('#forwardArrow').removeClass('primary');
+  if(queryHistoryJson[currentQueryIndex + 1] != undefined && queryHistoryJson[currentQueryIndex-1] != undefined){ // both back and forward exist
+    $('#forwardArrow').addClass('primary');
+    $('#backArrow').addClass('primary');
   }
-  else {
+  else if (currentQueryIndex == queryHistoryManager.getMaxHistoryLength() - 1 || queryHistoryJson[currentQueryIndex + 1] == undefined) { //only forward exists
     $('#forwardArrow').addClass('primary');
   }
-  if (currentQueryIndex == 0 || queryHistoryJson[currentQueryIndex - 1] == undefined) {
-    $('#backArrow').removeClass('primary');
-  }
-  else {
+  else if (currentQueryIndex == 0 || queryHistoryJson[currentQueryIndex - 1] == undefined) { //only backward exists
     $('#backArrow').addClass('primary');
   }
 }
