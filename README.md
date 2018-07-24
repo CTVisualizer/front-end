@@ -1,5 +1,3 @@
 # CTVisualizer
 
-The front-end for a database visualizer that works with Apache Phoenix. Developed for NTX developer usage.
-
-
+The Electron front-end for CTVisualizer: a database visualizer that hooks up with Apache Phoenix and assumes Kerberos authentication
