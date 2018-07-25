@@ -51,3 +51,14 @@ html, body, .container-fluid {
 .change:empty, .price:empty {
   display: none;
 }
+
+@import url('https://fonts.googleapis.com/css?family=Ubuntu+Mono|Ubuntu+Mono:700');
+
+table,
+textarea {
+    font-family: 'Ubuntu Mono', monospace;
+}
+
+th {
+    font-weight: 700
+}
