@@ -20,3 +20,4 @@ deploy:
   file: CTVisualizer-darwin-x64.tar.gz
   on:
     repo: CTVisualizer/front-end
+    tags: true
