@@ -23,7 +23,7 @@ before_deploy:
 deploy:
   provider: releases
   api_key: 
-    secure: $(ENCRYPTED_RELEASE_KEY)
+    secure: $ENCRYPTED_RELEASE_KEY
   file: './CTVisualizer-darwin-x64.tar.gz'
   skip_cleanup: true
   on:
