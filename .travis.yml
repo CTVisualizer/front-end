@@ -12,6 +12,7 @@ script:
 - cd ../..
 - cp ./packaged-app/CTVisualizer-darwin-x64/CTVisualizer-darwin-x64.tar.gz .
 before_deploy:
+- pwd
 - ls -la
 deploy:
   provider: releases
