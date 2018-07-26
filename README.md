@@ -5,8 +5,9 @@ The front-end component of the CTVisualizer project: a database visualizer that 
 Technologies Used (Front End): Electron, Node.js, Semantic UI, HTML5/CSS3/JS
 
 Front End Features For Which I Was Responsible:  
--Populating results tables with overflow scrolling/expanding  
+-Populating results tables with overflow scrolling/expanding and dynamic results coloring 
 -Automatic driver download with progress updates  
+-Indicating primary keys
 -Settings configs/driver manager  
 -Syntax highlighting (used CodeMirror embedded textbox)  
 -Maintaining query history with scrolling  
