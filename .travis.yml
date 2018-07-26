@@ -18,7 +18,7 @@ deploy:
   provider: releases
   api_key:
     secure: WeocdpQvk4HHm03Ayhlkqd2KNU2wf92k00Ev8irpi9juc3yMndntsSYBz73a0eQSZcvaajvOYR9PEANmDVxwgHik4GORnjrxFHNLkClAjEPfNYalc0RnkYCSvCYhsCXv0QfiEGU+RG/MA4Q36kUE/T99J/XVTJctmNuJT1ZKhOx8pHBfaaAWl9bCpHnnw5da+DS/LNup18VnNmRHKpDAwZzyiNSaDh82WkgKLqpMXgehZjOtrTdKQ9cVUPlNXLJgGyZ47EK1pEtccQr59BwdrysQLtlUhfz9v+G+lqNaypm4f6Wu06FRcD8kS4Wol7pTcZkfwEPeLbOV9jBL+beXeVe7AhQN+uSPOKLuUt3rKQa7Nmz2eQHTs3NXCdvUD7+EAWQpJvag/OWPml9LeOW37Iwf4PXmcPt0gGYbBltgGEQrQLBFkqNrRcBo3VtJr9AF2gU0QcC9I2EPsl4vTFz0EGaD0cuVVe1pNw+Axc8HGYQuWDOAe02WARuDXJCKSX7pou6BO/q6fHCAozaeyWV8/UaNzOI8BFOEdForT19ompej5mk2V+neN0b8eEh6MIxMHavFRqZpOfgz7C/FUc1eFZfRRDm54ptvRn9oTG5sb7UuBzFDxlLDjsVZyPaf8+QPad9jQQZvGW7M4YBfjrW7/2bHIqSEv9DZuArv0WwKe+Y=
-  file: ./CTVisualizer-darwin-x64.tar.gz
+  file: ./CTVisualizer/front-end/CTVisualizer-darwin-x64.tar.gz
   on:
     repo: CTVisualizer/front-end
     tags: true
