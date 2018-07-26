@@ -17,11 +17,14 @@ script:
   - cd ../..
   - cp ./packaged-app/CTVisualizer-darwin-x64/CTVisualizer-darwin-x64.tar.gz .
 
-deploy:
-  provider: releases
-  api_key: ${ENCRYPTED_RELEASE_KEY}
-    secure: 
-  file: './CTVisualizer-darwin-x64.tar.gz'
-  skip_cleanup: true
-  on:
-    tags: true
+before_deploy:
+  - ls -la
+
+# deploy:
+#   provider: releases
+#   api_key: ${ENCRYPTED_RELEASE_KEY}
+#     secure: 
+#   file: './CTVisualizer-darwin-x64.tar.gz'
+#   skip_cleanup: true
+#   on:
+#     tags: true
