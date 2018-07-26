@@ -1,0 +1,28 @@
+# This file is a template, and might need editing before it works on your project.
+# Official framework image. Look for the different tagged releases at:
+# https://hub.docker.com/r/library/node/tags/
+language: node_js
+
+node_js:
+  - "10.7.0"
+  
+install:
+  - sudo npm install electron-packager -g
+
+script:
+  - npm install
+  - electron-packager . CTVisualizer --platform=darwin --arch=x64 --out=./packaged-app --app-category-type=public.app-category.developer-tools --icon=./res/AppIcon.icns
+  - cd ./packaged-app/CTVisualizer-darwin-x64
+  - tar -zcvf CTVisualizer-darwin-x64.tar.gz *
+  - cd ../..
+  - cp ./packaged-app/CTVisualizer-darwin-x64/CTVisualizer-darwin-x64.tar.gz .
+
+deploy:
+  provider: releases
+  api_key: ${ENCRYPTED_RELEASE_KEY}
+    secure: 
+  file: 'CTVisualizer-darwin-x64.tar.gz'
+  on:
+    repo: CTVisualizer/front-end
+    branch: 'master'
+    tags: true
