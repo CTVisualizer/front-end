@@ -51,32 +51,12 @@
                                 <div height=10px>
                                     <br>
                                 </div>
-                                <!--<div class="ui grid">
-                                    <div class="eight wide column">
-                                        <div style="text-align: left">
-                                            <h3> Query</h3>
-                                        </div>
-                                    </div>
-                                    <div class="eight wide column">
-                                        <div style="text-align: right">
-                                            <button class="ui left labeled icon button small" id='backArrow' onclick="backwardQuery()">
-                                                Back
-                                                <i class="left arrow icon"></i>
-                                            </button>
-                                            <button class="ui right labeled icon button small" id='forwardArrow' onclick="forwardQuery()">
-                                                <i class="right arrow icon"></i>
-                                                Next
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>-->
-                                <h3>Query</h3>
-                                <div class="ui grid" style="max-height:40vh">
+                                <div class="ui grid">
                                     <div class="ten wide column">
                                         <textarea id="queryInput" placeholder="SELECT * FROM..."></textarea>
                                     </div>
                                     <div class="six wide column">
-                                        <div style="overflow-y: scroll; max-height: 28vh; border-style: solid; border-width: 1px; border-color: rgb(200,200,200);">
+                                        <div style="overflow-y: scroll; height: 300px; border-style: solid; border-width: 1px; border-color: rgb(200,200,200);">
                                             <table class="ui fixed single line celled table selectable" id="queryHistoryTable">
                                                 <tbody>
                                                     
@@ -89,7 +69,7 @@
                             <div class="ui grid">
                                 <div class="eight wide column">
                                     <div style="text-align: left">
-                                        <button class="ui green button" onclick="generateTable()">
+                                        <button class="ui green button" onclick="performQuery()">
                                             <i class="play icon" id='runIcon'></i>
                                             Run
                                         </button>

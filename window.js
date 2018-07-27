@@ -12,7 +12,6 @@ const path = require('path');
 const activeDriverManager = require('./usersettings/active-driver-manager');
 const phoenixSettingsManager = require('./usersettings/phoenix-settings-manager');
 const queryHistoryManager = require('./usersettings/query-history-manager');
-
 const driversDirectory = require('./usersettings/drivers-directory');
 const downloadsDirectory = require('./usersettings/downloads-directory');
 
@@ -28,19 +27,18 @@ var connected = false;
 var codeMirrorWindow;
 var currentQuery;
 var queryResults;
-var currentQueryIndex = 0;
 
 $(document).ready(function () { // on document ready, populate query window with most recent query
-  let queryHistoryJson = queryHistoryManager.getHistory()
-  if (currentQueryIndex != queryHistoryManager.getMaxHistoryLength() - 1 && queryHistoryJson[0] != undefined) {
-    codeMirrorWindow.setValue(queryHistoryJson[0]);
-    currentQueryIndex = 0;
+  let queryHistory = queryHistoryManager.getHistory()
+  console.log(queryHistory);
+  if (queryHistory[0] != undefined) {
+    codeMirrorWindow.setValue(queryHistory[0]["query"]);
   }
   updateQueryHistoryTable();
 });
 
-// Queries local connection and generates table with results
-function generateTable() {
+// Queries local connection and makes a call to build table if applicable
+function performQuery() {
   if (!connected) {
     $("#errorWarning").html(htmlComponents["notConnectedError"]);
   } else {
@@ -58,7 +56,6 @@ function generateTable() {
         $("#queryResponse").html("<h3>Executing query...</h3>");
         document.getElementById('runIcon').outerHTML = "<i class='spinner loading icon' id='runIcon'></i>";
         request('http://localhost:8080/execute/' + preparedQuery, function (error, response, body) {
-          updateQueryHistory(rawQuery);
           resumeNavbar();
           document.getElementById('runIcon').outerHTML = "<i class='play icon' id='runIcon'></i>";
           if (error) {
@@ -67,39 +64,46 @@ function generateTable() {
           } else {
             console.log(body);
             queryResults = JSON.parse(body);
-            var headers = buildHeaders(queryResults);
-            var data = queryResults['data'];
-            if (data.length > 100) {
-              var firstHundredData = data.slice(0, 101);
-              var dataForTable = firstHundredData;
-            } else {
-              var dataForTable = data;
-            }
-            var tableHtml = (
-              (new Table({
-                "class": "ui fixed single line celled table selectable compact",
-                "id": "queryResponse",
-                "style": "overflow-x:auto"
-              }))
-                .setHeaders(headers)
-                .setData(dataForTable)
-                .render()
-            );
-            $("#queryResponse").html(tableHtml);
-            stylePrimaryKeys(queryResults);
-            document.getElementById("numberOfResults").innerHTML = data.length + " Results";
-            if (data.length == 1)
-              document.getElementById("numberOfResults").innerHTML = "1 Result";
-            if (data.length > 100) {
-              document.getElementById("expandTableOption").outerHTML = "<button class='ui button mini blue' id='expandTableOption' onclick='expandTableResults()'>Display all results</button>"
-              document.getElementById("numberOfResults").innerHTML = data.length + " Results (Showing 100)";
-            }
-            $('td').addClass(getColorForStatusCode(response.statusCode));
+            updateQueryHistory(rawQuery, queryResults);
+            buildTable(queryResults, response.statusCode);
           }
         });
       }
     }
   }
+}
+
+// Populates query results table with input
+function buildTable(queryResults, responseCode) {
+  var headers = buildHeaders(queryResults);
+  var data = queryResults['data'];
+  if (data.length > 100) {
+    var firstHundredData = data.slice(0, 101);
+    var dataForTable = firstHundredData;
+  } else {
+    var dataForTable = data;
+  }
+  var tableHtml = (
+    (new Table({
+      "class": "ui fixed single line celled table selectable compact",
+      "id": "queryResponse",
+      "style": "overflow-x:auto"
+    }))
+      .setHeaders(headers)
+      .setData(dataForTable)
+      .render()
+  );
+  $("#queryResponse").html(tableHtml);
+  stylePrimaryKeys(queryResults);
+  document.getElementById("numberOfResults").innerHTML = data.length + " Results";
+  document.getElementById("expandTableOption").outerHTML = "<div id='expandTableOption'></div>"
+  if (data.length == 1)
+    document.getElementById("numberOfResults").innerHTML = "1 Result";
+  if (data.length > 100) {
+    document.getElementById("expandTableOption").outerHTML = "<button class='ui button mini blue' id='expandTableOption' onclick='expandTableResults()'>Display all results</button>"
+    document.getElementById("numberOfResults").innerHTML = data.length + " Results (Showing 100)";
+  }
+  $('td').addClass(getColorForStatusCode(responseCode));
 }
 
 function expandTableResults() {
@@ -224,16 +228,20 @@ function resumeNavbar() {
   document.getElementById("navbar").outerHTML = htmlComponents["navbarComponent"];
 }
 
-function updateQueryHistoryTable(){
+function updateQueryHistoryTable() {
   var queryHistory = queryHistoryManager.getHistory();
   $('.queryHistoryRow').remove();
-  for(var i = 0; i<queryHistory.length; i++){
-    $('#queryHistoryTable').append('<tr class="queryHistoryRow" style="cursor: pointer" onclick="populateQueryField(\''+queryHistory[i]+'\')"><td>'+queryHistory[i]+'</tr>');
+  for (var i = 0; i < queryHistory.length; i++) {
+    $('#queryHistoryTable').append('<tr class="queryHistoryRow" style="cursor: pointer" onclick="populateQueryField(\'' + i + '\')"><td>' + queryHistory[i]["query"] + '</tr>');
   }
 }
 
-function populateQueryField(queryToPopulate){
-  codeMirrorWindow.setValue(queryToPopulate);
+// Populate a query field  with results from a stored query
+function populateQueryField(queryIndex) {
+  var queryHistory = queryHistoryManager.getHistory();
+  codeMirrorWindow.setValue(queryHistory[queryIndex]["query"]);
+  var resultsToPopulate = queryHistory[queryIndex]["results"];
+  buildTable(queryHistory[queryIndex]["results"], 200);
 }
 
 function manageDrivers() {
@@ -363,7 +371,7 @@ function extractJar(fileToExtract) {
   var outputDirectoryName = fileToExtract.replace(".tar.gz", "");
   targz.decompress({
     src: downloadsDirectory.getDirectory() + fileToExtract,
-    dest: downloadsDirectory.getDirectory() +  outputDirectoryName,
+    dest: downloadsDirectory.getDirectory() + outputDirectoryName,
   }, function (err) {
     if (err) {
       console.log("Error extracting jar");
@@ -415,9 +423,8 @@ function downloadEnded() { // any time a download ends
   currentlyDownloading = false;
 }
 
-function updateQueryHistory(newQuery) {
-  queryHistoryManager.pushQuery(newQuery);
-  currentQueryIndex = 0;
+function updateQueryHistory(newQuery, results) {
+  queryHistoryManager.pushQuery(newQuery, results);
   updateQueryHistoryTable();
 }
 
@@ -454,7 +461,7 @@ function createConnection() {
       console.log(`child process exited with code ${code}`);
     });
 
-    // continiously try a health check until success or 10 seconds pass
+    // continuously try a health check until success or 10 seconds pass
     var attempts = 0;
     var requestLoop = setInterval(function () {
       request({
@@ -478,7 +485,6 @@ function createConnection() {
     }, 1000);
   }
 }
-
 
 function connectionSuccess() {
   connected = true;

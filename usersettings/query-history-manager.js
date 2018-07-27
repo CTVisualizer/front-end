@@ -38,12 +38,15 @@ function getHistory () {
 
 module.exports.getHistory = getHistory;
 
-module.exports.pushQuery = function (query) {
+module.exports.pushQuery = function (query, results) {
     createQueryHistoryFileIfNotExists();
     var history = getHistory();
-    let newHistoryLength = history.unshift(query);
+    var newEntry = {"query": query, "results": results}
+    let newHistoryLength = history.unshift(newEntry);
     if(newHistoryLength > maxHistoryLength) {
         writeQueryHistory(history.slice(0, maxHistoryLength));
+    } else {
+        writeQueryHistory(history);
     }
 }
 
