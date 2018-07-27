@@ -4,6 +4,7 @@ const fs = require('fs');
 const appdataDirectory = require('./appdata-directory');
 const locations = require('./locations');
 const maxHistoryLength = 20;
+const maxResultsStored = 100;
 
 const pathToQueryHistoryFile = appdataDirectory.getDirectory() + locations.pathToQueryHistoryFile;
 
@@ -41,7 +42,12 @@ module.exports.getHistory = getHistory;
 module.exports.pushQuery = function (query, results) {
     createQueryHistoryFileIfNotExists();
     var history = getHistory();
-    var newEntry = {"query": query, "results": results}
+    var pushedResults = results;
+    console.log(pushedResults);
+    if(pushedResults["data"].length>maxResultsStored){
+        pushedResults["data"] = pushedResults["data"].slice(0, maxResultsStored);
+    }
+    var newEntry = {"query": query, "results": pushedResults}
     let newHistoryLength = history.unshift(newEntry);
     if(newHistoryLength > maxHistoryLength) {
         writeQueryHistory(history.slice(0, maxHistoryLength));
@@ -51,3 +57,4 @@ module.exports.pushQuery = function (query, results) {
 }
 
 module.exports.getMaxHistoryLength = function () {return maxHistoryLength};
+module.exports.getMaxResultsStored = function () {return maxResultsStored};

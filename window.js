@@ -62,10 +62,11 @@ function performQuery() {
             $("#errorWarning").html(htmlComponents["databaseRequestError"]);
             $("queryResponse").html("<table class='ui celled striped table'></table></div>");
           } else {
-            console.log(body);
             queryResults = JSON.parse(body);
-            updateQueryHistory(rawQuery, queryResults);
+            console.log(queryResults['data'].length);
             buildTable(queryResults, response.statusCode);
+            updateQueryHistory(rawQuery, queryResults);
+            queryResults = JSON.parse(body);
           }
         });
       }
@@ -232,16 +233,19 @@ function updateQueryHistoryTable() {
   var queryHistory = queryHistoryManager.getHistory();
   $('.queryHistoryRow').remove();
   for (var i = 0; i < queryHistory.length; i++) {
-    $('#queryHistoryTable').append('<tr class="queryHistoryRow" style="cursor: pointer" onclick="populateQueryField(\'' + i + '\')"><td>' + queryHistory[i]["query"] + '</tr>');
+    $('#queryHistoryTable').append('<tr class="queryHistoryRow" style="cursor: pointer" onclick="populateQueryFieldFromHistory(\'' + i + '\')"><td>' + queryHistory[i]["query"] + '</tr>');
   }
 }
 
 // Populate a query field  with results from a stored query
-function populateQueryField(queryIndex) {
+function populateQueryFieldFromHistory(queryIndex) {
   var queryHistory = queryHistoryManager.getHistory();
   codeMirrorWindow.setValue(queryHistory[queryIndex]["query"]);
   var resultsToPopulate = queryHistory[queryIndex]["results"];
   buildTable(queryHistory[queryIndex]["results"], 200);
+  if(queryHistory[queryIndex]["results"]["data"].length==100){
+    document.getElementById("numberOfResults").innerHTML = queryHistoryManager.getMaxResultsStored()+" stored results. (Run query again for full results.)";
+  }
 }
 
 function manageDrivers() {
