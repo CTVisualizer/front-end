@@ -19,7 +19,7 @@ const downloadsDirectory = require('./usersettings/downloads-directory');
 // Local JSON
 var htmlComponents = require("./htmlComponents.json");
 
-// Global Stated Data
+// Globals
 var currentComponent = 1; // current component which is being viewed (1=DB visualizer, 2=help, 3=drivermanager, 4=help)
 var sqlVisualizerComponent; // current HTML state of the Sql Visualizer component
 var currentlyDownloading = false; // is a driver being downloaded
@@ -36,7 +36,7 @@ $(document).ready(function () { // on document ready, populate query window with
     codeMirrorWindow.setValue(queryHistoryJson[0]);
     currentQueryIndex = 0;
   }
-  colorHistoryArrows();
+  updateQueryHistoryTable();
 });
 
 // Queries local connection and generates table with results
@@ -224,40 +224,16 @@ function resumeNavbar() {
   document.getElementById("navbar").outerHTML = htmlComponents["navbarComponent"];
 }
 
-function forwardQuery() {
-  let queryHistoryJson = queryHistoryManager.getHistory();
-  if (currentQueryIndex != 0 && queryHistoryJson[currentQueryIndex - 1] != undefined) {
-    currentQueryIndex--;
-    var currentQueryText = queryHistoryJson[currentQueryIndex];
-    codeMirrorWindow.setValue(currentQueryText);
-    colorHistoryArrows();
+function updateQueryHistoryTable(){
+  var queryHistory = queryHistoryManager.getHistory();
+  $('.queryHistoryRow').remove();
+  for(var i = 0; i<queryHistory.length; i++){
+    $('#queryHistoryTable').append('<tr class="queryHistoryRow" style="cursor: pointer" onclick="populateQueryField(\''+queryHistory[i]+'\')"><td>'+queryHistory[i]+'</tr>');
   }
 }
 
-function backwardQuery() {
-  let queryHistoryJson = queryHistoryManager.getHistory();
-  if (currentQueryIndex != queryHistoryManager.getMaxHistoryLength() - 1 && queryHistoryJson[currentQueryIndex + 1] != undefined) {
-    currentQueryIndex++;
-    var currentQueryText = queryHistoryJson[currentQueryIndex];
-    codeMirrorWindow.setValue(currentQueryText);
-    colorHistoryArrows();
-  }
-}
-
-function colorHistoryArrows() {
-  $('#forwardArrow').removeClass('primary');
-  $('#backArrow').removeClass('primary');
-  let queryHistoryJson = queryHistoryManager.getHistory();
-  if(queryHistoryJson[currentQueryIndex + 1] != undefined && queryHistoryJson[currentQueryIndex-1] != undefined){ // both back and forward exist
-    $('#forwardArrow').addClass('primary');
-    $('#backArrow').addClass('primary');
-  }
-  else if (currentQueryIndex == queryHistoryManager.getMaxHistoryLength() - 1 || queryHistoryJson[currentQueryIndex + 1] == undefined) { //only forward exists
-    $('#forwardArrow').addClass('primary');
-  }
-  else if (currentQueryIndex == 0 || queryHistoryJson[currentQueryIndex - 1] == undefined) { //only backward exists
-    $('#backArrow').addClass('primary');
-  }
+function populateQueryField(queryToPopulate){
+  codeMirrorWindow.setValue(queryToPopulate);
 }
 
 function manageDrivers() {
@@ -442,7 +418,7 @@ function downloadEnded() { // any time a download ends
 function updateQueryHistory(newQuery) {
   queryHistoryManager.pushQuery(newQuery);
   currentQueryIndex = 0;
-  colorHistoryArrows();
+  updateQueryHistoryTable();
 }
 
 // PHOENIX CONNECTION

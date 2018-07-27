@@ -43,9 +43,8 @@ module.exports.pushQuery = function (query) {
     var history = getHistory();
     let newHistoryLength = history.unshift(query);
     if(newHistoryLength > maxHistoryLength) {
-        history.slice(0, maxHistoryLength);
+        writeQueryHistory(history.slice(0, maxHistoryLength));
     }
-    writeQueryHistory(history);
 }
 
 module.exports.getMaxHistoryLength = function () {return maxHistoryLength};

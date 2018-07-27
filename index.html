@@ -13,7 +13,7 @@
     <link rel="stylesheet" type="text/css" href="semantic/dist/semantic.min.css">
     <link rel="stylesheet" href="./styles.css">
     <link rel="stylesheet" href="codemirror/lib/codemirror.css">
-    
+
     <body>
         <!-- Menu Bar -->
         <div class="ui menu" id="navbar">
@@ -48,8 +48,10 @@
                                     <i class="play icon"></i>
                                     Connect to Database
                                 </button>
-                                <div height=10px><br></div>
-                                <div class="ui grid">
+                                <div height=10px>
+                                    <br>
+                                </div>
+                                <!--<div class="ui grid">
                                     <div class="eight wide column">
                                         <div style="text-align: left">
                                             <h3> Query</h3>
@@ -67,8 +69,22 @@
                                             </button>
                                         </div>
                                     </div>
+                                </div>-->
+                                <h3>Query</h3>
+                                <div class="ui grid" style="max-height:40vh">
+                                    <div class="ten wide column">
+                                        <textarea id="queryInput" placeholder="SELECT * FROM..."></textarea>
+                                    </div>
+                                    <div class="six wide column">
+                                        <div style="overflow-y: scroll; max-height: 28vh; border-style: solid; border-width: 1px; border-color: rgb(200,200,200);">
+                                            <table class="ui fixed single line celled table selectable" id="queryHistoryTable">
+                                                <tbody>
+                                                    
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
-                                <textarea id="queryInput" placeholder="SELECT * FROM..."></textarea>
                             </div>
                             <div class="ui grid">
                                 <div class="eight wide column">
