@@ -1,6 +1,6 @@
 {
   "name": "CTVisualizer",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "The front-end of a database visualizer that works with Apache Phoenix",
   "repository": {
     "type": "git",
